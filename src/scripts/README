@@ -1,0 +1,10 @@
+do_fit			1 fit, calls mkbar_cube.csh
+do_fit_panel		1 panel (5x6 actually for us), calls do_fit
+do_fit_panel_all	all panels, calls do_fit_panel            
+do_survey		create a survey
+do_survey_done		report what is done/ok in a survey
+mkbar_cube.csh		basic low level gridding/projection scripts, needs a .par file
+mk_cube1		quick and dirty FITS viewing of a hydro run
+mkwip-loop		helper script for panel5x5.wip
+panel5x5.wip		wip that panels 5x6 actually
+README			this file

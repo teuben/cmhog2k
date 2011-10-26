@@ -1,0 +1,182 @@
+#include "cmhog.def"
+c=======================================================================
+c/////////////////////////  SUBROUTINE ZINTRMP  \\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine zintrmp(d,v,w,dzi,df,vf,wf)
+c
+c  COMPUTES INTERFACE FLUXES IN Z-DIRECTION FOR REMAP
+c
+c  written by: Jim Stone
+c  date:       January, 1991
+c  modified1:
+c
+c  PURPOSE:  Interpolates the fundamental variables on the Lagrangean
+c    mesh for remap.  The interpolated parabolae are then integrated
+c    to compute the "effective flux" for the remap at each interface.
+c
+c  INPUT ARGUMENTS: d=density; p=pressure; e=total energy; u,v,w=x,y,z
+c    components of velocity.  These are all zone centered (defined over
+c    nxz,nyz,nzz).
+c
+c  OUTPUT ARGUMENTS: df=density flux; ef=total energy flux; uf,vf,wf=
+c    x,y,z-components of velocity fluxes.  These are all centered at
+c    interfaces in z-direction (defined over nxz,nyz,nzz+1).
+c
+c  EXTERNALS: CVMGT
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "root.h"
+#include "bndry.h"
+      real  d(jn,kn)
+     &    , v(jn,kn), w(jn,kn), dzi(jn,kn)
+      real df(jn,kn),vf(jn,kn)
+     &    ,wf(jn,kn)
+
+      integer j,k
+      real qa, qb, qc, qd, qe, s1, s2, udtim1, udti, ft
+     & ,dplus, vplus, wplus
+     & ,dmnus, vmnus, wmnus, yy
+      real  c1(ijkn), c2(ijkn), c3(ijkn), c4(ijkn), c5(ijkn), c6(ijkn)
+     &    , dd(ijkn), dv(ijkn), dw(ijkn)
+     &    ,dph(ijkn),vph(ijkn),wph(ijkn)
+     &    ,d2d(ijkn),dzb(ijkn), dl(ijkn), vl(ijkn)
+     &    , wl(ijkn), dr(ijkn), vr(ijkn), wr(ijkn)
+     &    , d6(ijkn), v6(ijkn), w6(ijkn)
+      real delta
+c      real cs
+      parameter(ft=4.0/3.0)
+#include "cvmgt.h"
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\/////////////////////////////////////
+c=======================================================================
+c
+      do 200 j=js,je
+c
+c  Compute coefficients used in interpolation formulae
+c
+      do 100 k=ks-2,ke+2
+        qa    = dzi(j,k)/(dzi(j,k-1) + dzi(j,k) + dzi(j,k+1))
+        c1(k)=qa*(2.0*dzi(j,k-1)+dzi(j,k))/(dzi(j,k+1)+dzi(j,k))
+        c2(k)=qa*(2.0*dzi(j,k+1)+dzi(j,k))/(dzi(j,k-1)+dzi(j,k))
+100   continue
+      do 110 k=ks-1,ke+2
+        qa = dzi(j,k-2) + dzi(j,k-1) + dzi(j,k) + dzi(j,k+1)
+        qb = dzi(j,k-1)/(dzi(j,k-1) + dzi(j,k))
+        qc = (dzi(j,k-2)+dzi(j,k-1))/(2.0*dzi(j,k-1)+dzi(j,k  ))
+        qd = (dzi(j,k+1)+dzi(j,k  ))/(2.0*dzi(j,k  )+dzi(j,k-1))
+        qb = qb + 2.0*dzi(j,k)*qb/qa*(qc-qd)
+        c3(k) = 1.0 - qb 
+        c4(k) = qb
+        c5(k) =  dzi(j,k  )/qa*qd
+        c6(k) = -dzi(j,k-1)/qa*qc
+110   continue
+c
+c  Compute average linear slopes (eqn 1.7)
+c
+      do 210 k=ks-2,ke+2
+        dplus = d(j,k+1)-d(j,k  )
+        vplus = v(j,k+1)-v(j,k  )
+        wplus = w(j,k+1)-w(j,k  )
+c
+        dmnus = d(j,k  )-d(j,k-1)
+        vmnus = v(j,k  )-v(j,k-1)
+        wmnus = w(j,k  )-w(j,k-1)
+c
+        dd(k) = c1(k)*dplus + c2(k)*dmnus
+        dv(k) = c1(k)*vplus + c2(k)*vmnus
+        dw(k) = c1(k)*wplus + c2(k)*wmnus
+c
+c  Monotonize (eqn 1.8)
+c
+        qa = min(abs(dd(k)),2.0*abs(dmnus),2.0*abs(dplus))
+        qd = min(abs(dv(k)),2.0*abs(vmnus),2.0*abs(vplus))
+        qe = min(abs(dw(k)),2.0*abs(wmnus),2.0*abs(wplus))
+c
+        dd(k) = cvmgt(qa, 0.0, dplus*dmnus.gt.0.0)*sign(1.0, dd(k))
+        dv(k) = cvmgt(qd, 0.0, vplus*vmnus.gt.0.0)*sign(1.0, dv(k))
+        dw(k) = cvmgt(qe, 0.0, wplus*wmnus.gt.0.0)*sign(1.0, dw(k))
+210   continue
+c
+c  construct interface values (eqn 1.6)
+c
+      do 220 k=ks-1,ke+2
+       dph(k)= c3(k)*d(j,k-1)+c4(k)*d(j,k)+c5(k)*dd(k-1)+c6(k)*dd(k)
+       vph(k)= c3(k)*v(j,k-1)+c4(k)*v(j,k)+c5(k)*dv(k-1)+c6(k)*dv(k)
+       wph(k)= c3(k)*w(j,k-1)+c4(k)*w(j,k)+c5(k)*dw(k-1)+c6(k)*dw(k)
+220   continue
+c
+c  left and right values
+c
+      do 250 k=ks-1,ke+1
+        dl(k) = dph(k  )
+        vl(k) = vph(k  )
+        wl(k) = wph(k  )
+c
+        dr(k) = dph(k+1)
+        vr(k) = vph(k+1)
+        wr(k) = wph(k+1)
+250   continue
+c
+c  Monotonize again (eqn 1.10)
+c
+      do 280 k=ks-1,ke+1
+        qa = (dr(k)-d(j,k))*(d(j,k)-dl(k))
+        qd = dr(k)-dl(k)
+        qe = 6.0*(d(j,k)-0.5*(dr(k)+dl(k)))
+        dl(k) = cvmgt(d(j,k), dl(k), qa.le.0.0)
+        dr(k) = cvmgt(d(j,k), dr(k), qa.le.0.0)
+        dl(k) = cvmgt(3.0*d(j,k)-2.0*dr(k), dl(k), qd**2-qd*qe.lt.0.0)
+        dr(k) = cvmgt(3.0*d(j,k)-2.0*dl(k), dr(k), qd**2+qd*qe.lt.0.0)
+c
+        qa = (vr(k)-v(j,k))*(v(j,k)-vl(k))
+        qd = vr(k)-vl(k)
+        qe = 6.0*(v(j,k)-0.5*(vr(k)+vl(k)))
+        vl(k) = cvmgt(v(j,k), vl(k), qa.le.0.0)
+        vr(k) = cvmgt(v(j,k), vr(k), qa.le.0.0)
+        vl(k) = cvmgt(3.0*v(j,k)-2.0*vr(k), vl(k), qd**2-qd*qe.lt.0.0)
+        vr(k) = cvmgt(3.0*v(j,k)-2.0*vl(k), vr(k), qd**2+qd*qe.lt.0.0)
+c
+        qa = (wr(k)-w(j,k))*(w(j,k)-wl(k))
+        qd = wr(k)-wl(k)
+        qe = 6.0*(w(j,k)-0.5*(wr(k)+wl(k)))
+        wl(k) = cvmgt(w(j,k), wl(k), qa.le.0.0)
+        wr(k) = cvmgt(w(j,k), wr(k), qa.le.0.0)
+        wl(k) = cvmgt(3.0*w(j,k)-2.0*wr(k), wl(k), qd**2-qd*qe.lt.0.0)
+        wr(k) = cvmgt(3.0*w(j,k)-2.0*wl(k), wr(k), qd**2+qd*qe.lt.0.0)
+280   continue
+c
+c  Now construct interface fluxes (eqn 1.12)
+c
+      do 290 k=ks-1,ke+1
+        d6(k) = 6.0*(d(j,k)-0.5*(dl(k)+dr(k)))
+        v6(k) = 6.0*(v(j,k)-0.5*(vl(k)+vr(k)))
+        w6(k) = 6.0*(w(j,k)-0.5*(wl(k)+wr(k)))
+290   continue
+      do 295 k=ks,ke+1
+        yy     = (zn(j,k)-dt*vgz) - z(k)
+	delta  = yy * radius(j)
+        udtim1 = abs(yy/(2.0*dzi(j,k-1)))
+        udti   = abs(yy/(2.0*dzi(j,k  )))
+c
+        qa = dr(k-1)-udtim1*(dr(k-1)-dl(k-1)-(1.0-ft*udtim1)*d6(k-1))
+        qb = dl(k  )+udti  *(dr(k  )-dl(k  )+(1.0-ft*udti  )*d6(k  ))
+        df(j,k) = delta*cvmgt(qa, qb, yy .ge. 0.0)
+c
+        yy = df(j,k)
+        udtim1 = abs(yy/(2.0*dzi(j,k-1)*radius(j)*d(j,k-1)))
+        udti   = abs(yy/(2.0*dzi(j,k  )*radius(j)*d(j,k  )))
+c
+        qc = vr(k-1)-udtim1*(vr(k-1)-vl(k-1)-(1.0-ft*udtim1)*v6(k-1))
+        qd = vl(k  )+udti  *(vr(k  )-vl(k  )+(1.0-ft*udti  )*v6(k  ))
+        vf(j,k) = yy*cvmgt(qc, qd, yy .ge. 0.0)
+c
+        qc = wr(k-1)-udtim1*(wr(k-1)-wl(k-1)-(1.0-ft*udtim1)*w6(k-1))
+        qd = wl(k  )+udti  *(wr(k  )-wl(k  )+(1.0-ft*udti  )*w6(k  ))
+        wf(j,k) = yy*cvmgt(qc, qd, yy .ge. 0.0)
+295   continue
+c
+200   continue
+      return
+      end

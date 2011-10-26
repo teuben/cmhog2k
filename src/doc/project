@@ -1,0 +1,30 @@
+#! /bin/csh -f 
+#
+#> SCALE inc=0		0:90:1
+#> RADIO rotation=ccw   ccw,cw
+#> SCALE pa=0		-180:180:1
+#> SCALE phi=0		-90:90:1
+#> RADIO yapp=/xs       /xs,/vps,/ps
+#> ENTRY text=  
+
+
+foreach a ($*)
+  set $a
+end
+
+
+#  puts [exec nemoinp "atand(tand($phi)/cosd($inc))"]
+#  puts [exec nemoinp "sqrt((cosd($phi))**2+(sind($phi)/cosd($inc))**2)"]
+
+if ($rotation == "cw") then
+  snaprotate model.dat - "atand(tand($phi)/cosd($inc+180)),$inc+180,$pa" zyz |\
+	snapplot - psize=vz/4 yapp=$yapp xlabel="inc=$inc ($rotation) pa=$pa phi=$phi" "ylabel=$text"
+else
+  snaprotate model.dat - "atand(tand($phi)/cosd($inc)),$inc,$pa+180" zyz |\
+	snapplot - psize=vz/4 yapp=$yapp xlabel="inc=$inc ($rotation) pa=$pa phi=$phi" "ylabel=$text"
+endif
+
+# psize=near
+
+#exec rm -f last.dat
+#exec snaprotate model.dat last.dat "atand(tand($phi)/cosd($inc)),$inc,$pa" zyz error=1

@@ -1,0 +1,47 @@
+#include "cmhog.def"
+c=======================================================================
+c///////////////////  SUBROUTINE GPOT Interporation  \\\\\\\\\\\\\\\\\\\
+c
+      subroutine gpotforce(phicen,phiy,phiz)
+#ifdef SELFGRAV
+c
+c Written by Doosu Yoon
+c
+c
+c PURPOSE:
+c
+c 7/12/07
+c             TODO:
+c
+c  INPUT  : phicen(jn,kn),phiy(jn,kn),phiz(jn,kn)
+c  OUTPUT : selfgycen,selfgyed,selfgzcen,selfgzed
+c
+c  LOCALs:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "grav.h"
+      real phicen(jn,kn)
+      real phiy(jn,kn), phiz(jn,kn)
+      real zcentdiff,zdiff
+      integer j,k
+          
+      do 10 k=ks,ke+1
+         do 10 j=js-3,je+3
+            selfgyed(j,k) = (phicen(j-1,k) - phicen(j,k))
+     &                      /(radius(j) - radius(j-1))
+            selfgycen(j,k) = (phiy(j,k) - phiy(j+1,k))
+     &                       /(y(j+1) - y(j))
+   10 continue
+      do 20 k=ks-1,ke+1
+         zcentdiff = (zcenteul(k) - zcenteul(k-1))
+         zdiff     = (z(k+1) - z(k))
+         do 20 j=js,je
+            selfgzed(j,k) = (phicen(j,k-1) - phicen(j,k))
+     &                      /zcentdiff/radius(j)  
+            selfgzcen(j,k) = (phiz(j,k) - phiz(j,k+1))
+     &                       /zdiff/radius(j)  
+   20 continue
+#endif /*SELFGRAV*/
+      return
+      end

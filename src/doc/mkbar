@@ -1,0 +1,23 @@
+#! /bin/csh -f
+#
+#
+#> nemo.need mkconfig snapadd snapscale snaprotate snapspin
+
+# bar length and axis ratio of bar
+set b=1.4
+set q=0.2
+
+# 
+set n=100
+
+# derived quantities
+set phi=`nemoinp "atand($q)"`
+
+rm bulge line1 line2 bar disk model.dat
+
+mkconfig - $n shell "$q*$b" | snapscale - bulge 1 1,1,0.4
+mkconfig - $n line $b | snaprotate - -  90-$phi z | snapshift - line1 "-$q*$b,0,0"
+mkconfig - $n line $b | snaprotate - - -90-$phi z | snapshift - line2 "$q*$b,0,0"
+mkconfig - $n ring $b | snapscale - bar 1 $q,1,1
+mkconfig - $n ring 2  | snapspin - disk 1
+snapadd disk,bulge,line1,line2,bar model.dat 

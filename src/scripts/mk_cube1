@@ -1,0 +1,44 @@
+#! /bin/csh -f
+#
+#
+
+set polar=0
+set m=10
+set out=junk
+set frame=1:1000
+set var=den
+set digits=4
+set animate=1
+
+foreach _arg ($*)
+   set $_arg
+end
+
+set format=%0${digits}d
+
+
+echo polar=$polar m=$m frame=$frame format=$format
+
+set n=0
+set r=-${m}:$m
+
+rm -f junk*.fits
+
+foreach i (`nemoinp $frame format=$format`)
+  #  stop when no more frames found
+  if (! -e hdf{$i}bg) break
+  echo $i
+  @ n++
+  set nnn=`nemoinp $n format=$format`
+  set in=hdf${i}bg
+  set out=junk$nnn.fits
+  if ($polar) then
+   sdsfits $in $out $var
+  else
+   hdfgrid $in - zvar=$var xrange=$r yrange=$r | ccdfits - $out radecvel=t
+  endif
+  if ($animate) mirds9 $out
+end
+
+#  glue them together into a giant
+fitsglue junk$format.fits junk_cube.fits inlist=1:$n

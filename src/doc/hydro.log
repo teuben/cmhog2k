@@ -1,0 +1,412 @@
+This is TeX, Version 3.14159 (Web2C 7.4.5) (format=latex 2006.3.8)  29 JAN 2007 14:07
+**hydro
+(./hydro.tex
+LaTeX2e <2001/06/01>
+Babel <v3.7h> and hyphenation patterns for american, french, german, ngerman, n
+ohyphenation, loaded.
+(/usr/share/texmf/tex/latex/base/article.cls
+Document Class: article 2001/04/21 v1.4e Standard LaTeX document class
+(/usr/share/texmf/tex/latex/base/size10.clo
+File: size10.clo 2001/04/21 v1.4e Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf/tex/latex/graphics/graphicx.sty
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf/tex/latex/graphics/keyval.sty
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/share/texmf/tex/latex/graphics/graphics.sty
+Package: graphics 2001/07/07 v1.0n Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/usr/share/texmf/tex/latex/config/graphics.cfg
+File: graphics.cfg 2001/08/31 v1.1 graphics configuration of teTeX/TeXLive
+)
+Package graphics Info: Driver file: dvips.def on input line 80.
+
+(/usr/share/texmf/tex/latex/graphics/dvips.def
+File: dvips.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(/usr/share/texmf/tex/latex/misc/subfigure.sty
+Package: subfigure 2002/07/30 v2.1.4 subfigure package
+\subfigtopskip=\skip43
+\subfigcapskip=\skip44
+\subfigcaptopadj=\dimen105
+\subfigbottomskip=\skip45
+\subfigcapmargin=\dimen106
+\subfiglabelskip=\skip46
+\c@subfigure=\count87
+\c@lofdepth=\count88
+\c@subtable=\count89
+\c@lotdepth=\count90
+\subfig@top=\skip47
+\subfig@bottom=\skip48
+)
+No file hydro.aux.
+\openout1 = `hydro.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 33.
+LaTeX Font Info:    ... okay on input line 33.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 33.
+LaTeX Font Info:    ... okay on input line 33.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 33.
+LaTeX Font Info:    ... okay on input line 33.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 33.
+LaTeX Font Info:    ... okay on input line 33.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 33.
+LaTeX Font Info:    ... okay on input line 33.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 33.
+LaTeX Font Info:    ... okay on input line 33.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 35.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 35.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 35.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 43.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 43.
+[1
+
+]
+Overfull \hbox (59.24648pt too wide) in paragraph at lines 99--99
+[]    \OT1/cmtt/m/n/10 open(unit=1,file='cmhogin' ,status='old')               
+     ::mstart.src[] 
+ []
+
+
+Overfull \hbox (59.24648pt too wide) in paragraph at lines 99--99
+[]    \OT1/cmtt/m/n/10 real*8 amp,amode,n,aob,qm,rhoc                          
+     ::galaxy.src[] 
+ []
+
+
+Overfull \hbox (48.74657pt too wide) in paragraph at lines 99--99
+[]    \OT1/cmtt/m/n/10 namelist /ggen2/ nbl,ymin,ymax,igrid,yrat,dymin,vgy,lgri
+d    ::ggen.src[] 
+ []
+
+
+Overfull \hbox (38.24666pt too wide) in paragraph at lines 126--126
+[] \OT1/cmtt/m/n/10 $ggen2 nbl=132,ymin=0.1,ymax=16.0,yrat=1.03926991,igrid=1,l
+grid=.true. $[] 
+ []
+
+
+Overfull \hbox (74.99634pt too wide) in paragraph at lines 126--126
+[] \OT1/cmtt/m/n/10 $pgen amp=10.0,amode=1.0,n=1.0,aob=2.5,rl=6.0,qm=4.5e4,rhoc
+=2.4e4,bartime=0.1 $[] 
+ []
+
+
+Overfull \hbox (27.74675pt too wide) in paragraph at lines 126--126
+[] \OT1/cmtt/m/n/10 $spiral spamp=0.0,spang=-0.5236,spsc=1.0,sppat=32.74,sr=4.0
+,pc=2.328 $[] 
+ []
+
+
+Overfull \hbox (43.49661pt too wide) in paragraph at lines 126--126
+[] \OT1/cmtt/m/n/10 $mlims cma1=3.0,cmi1=-2.0,cma2=200.0,cmi2=-200.0,cma3=200.0
+,cmi3=-200.0 $[] 
+ []
+
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 138.
+
+(/usr/share/texmf/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 138.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 139.
+ [2] [3]
+Overfull \hbox (38.24666pt too wide) in paragraph at lines 251--251
+[] \OT1/cmtt/m/n/10 $ggen2 nbl=132,ymin=0.1,ymax=16.0,yrat=1.03926991,igrid=1,l
+grid=.true. $[] 
+ []
+
+[4]
+File: yrat.ps Graphic file (type eps)
+ <yrat.ps> [5] [6]
+Overfull \hbox (27.74675pt too wide) in paragraph at lines 455--455
+[]  \OT1/cmtt/m/n/10 % hdp dumpsds -i 2 -d hdf0001bg                 # R-veloci
+ty (matrix)[] 
+ []
+
+
+Overfull \hbox (38.24666pt too wide) in paragraph at lines 455--455
+[]  \OT1/cmtt/m/n/10 % hdp dumpsds -i 5 -d hdf0001bg                 # PHI-velo
+city (matrix)[] 
+ []
+
+
+Overfull \hbox (11.99689pt too wide) in paragraph at lines 455--455
+[]  \OT1/cmtt/m/n/10 % hdp dumpsds -i 8 -d hdf0001bg                 # DENSITY 
+(matrix)[] 
+ []
+
+[7]
+Overfull \hbox (12.00513pt too wide) in paragraph at lines 493--493
+[]\OT1/cmtt/m/n/8 1: R-VELOCITY AT TIME=1.00E-01(20,37) km/sec  -> [740 element
+s of type: 5 (FLOAT32)][] 
+ []
+
+
+Overfull \hbox (20.50525pt too wide) in paragraph at lines 493--493
+[]\OT1/cmtt/m/n/8 2: PHI-VELOCITY AT TIME=1.00E-01(20,37) km/sec  -> [740 eleme
+nts of type: 5 (FLOAT32)][] 
+ []
+
+
+Overfull \hbox (24.75531pt too wide) in paragraph at lines 493--493
+[]\OT1/cmtt/m/n/8 3: DENSITY AT TIME=1.00E-01(20,37) Msolar/pc**2  -> [740 elem
+ents of type: 5 (FLOAT32)][] 
+ []
+
+File: denrt.ps Graphic file (type eps)
+<denrt.ps>
+File: denxy.ps Graphic file (type eps)
+ <denxy.ps>
+Underfull \hbox (badness 10000) in paragraph at lines 512--512
+\OT1/cmtt/m/n/10 % fitsccd mapd.fits - | ccdmath - - 'log(%1)' | ccdplot -
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 512--512
+\OT1/cmtt/m/n/10 % hdfgrid hdf200bg - 3 | ccdmath - - 'log(%1)' | ccdplot -
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 512--512
+
+ []
+
+
+Overfull \hbox (16.25519pt too wide) in paragraph at lines 528--528
+[]\OT1/cmtt/m/n/8 1: R-VELOCITY AT TIME=0.00E+00(40,67) km/sec  -> [2680 elemen
+ts of type: 5 (FLOAT32)][] 
+ []
+
+
+Overfull \hbox (24.75531pt too wide) in paragraph at lines 528--528
+[]\OT1/cmtt/m/n/8 2: PHI-VELOCITY AT TIME=0.00E+00(40,67) km/sec  -> [2680 elem
+ents of type: 5 (FLOAT32)][] 
+ []
+
+
+Overfull \hbox (29.00537pt too wide) in paragraph at lines 528--528
+[]\OT1/cmtt/m/n/8 3: DENSITY AT TIME=0.00E+00(40,67) Msolar/pc**2  -> [2680 ele
+ments of type: 5 (FLOAT32)][] 
+ []
+
+
+Overfull \hbox (71.50598pt too wide) in paragraph at lines 546--546
+[]\OT1/cmtt/m/n/8 % fitsccd mapd.fits - | ccdmom - - axis=2 mom=0 | ccdprint - 
+x= newline=t | tabplot - 0 1 line=1,1[] 
+ []
+
+[8] [9]
+Overfull \hbox (27.74675pt too wide) in paragraph at lines 618--618
+[]\OT1/cmtt/m/n/10 The so-called ``vrt'' and ``vrtd'' files are to be made from
+ HDF files,[] 
+ []
+
+
+Overfull \hbox (6.74693pt too wide) in paragraph at lines 618--618
+[]\OT1/cmtt/m/n/10 with the script mkvrt and mkvrtd that didn't come with flowc
+ode yet[] 
+ []
+
+[10]
+Overfull \hbox (6.74693pt too wide) in paragraph at lines 618--618
+[]\OT1/cmtt/m/n/10 circular orbits, so we'll integrate the flow and see if they
+ remain[] 
+ []
+
+
+Overfull \hbox (3.505pt too wide) in paragraph at lines 652--652
+[]\OT1/cmtt/m/n/8 mkconfig - $n line $b | snaprotate - -  90-$phi z | snapshift
+ - line1 "-$q*$b,0,0"[] 
+ []
+
+File: model1.ps Graphic file (type eps)
+<model1.ps> [11]
+Overfull \hbox (67.25592pt too wide) in paragraph at lines 696--696
+[]    \OT1/cmtt/m/n/8 snapplot - psize=vz/4 yapp=$yapp xlabel="inc=$inc ($rotat
+ion) pa=$pa phi=$phi" "ylabel=$text"[] 
+ []
+
+
+Overfull \hbox (67.25592pt too wide) in paragraph at lines 696--696
+[]    \OT1/cmtt/m/n/8 snapplot - psize=vz/4 yapp=$yapp xlabel="inc=$inc ($rotat
+ion) pa=$pa phi=$phi" "ylabel=$text"[] 
+ []
+
+[12]
+Overfull \hbox (20.50525pt too wide) in paragraph at lines 900--900
+[]\OT1/cmtt/m/n/8 #  17-apr-01    added velocity referencing using 'vsys' to be
+ at v=0 in the model cube[] 
+ []
+
+[13] [14]
+Overfull \hbox (37.5055pt too wide) in paragraph at lines 900--900
+[]    \OT1/cmtt/m/n/8 echo BUG: need to rewrite this section for when no refmap
+ given..... since you did not[] 
+ []
+
+
+Overfull \hbox (46.00562pt too wide) in paragraph at lines 900--900
+[]\OT1/cmtt/m/n/8 #> nemo.need tabtos snaptrans snaprotate snapadd snapgrid ccd
+smooth ccdmath ccdfits fitshead[] 
+ []
+
+
+Overfull \hbox (58.7558pt too wide) in paragraph at lines 900--900
+[]    \OT1/cmtt/m/n/8 ccdmath $tmp.0.s - "log(%1)" | ccdmath - - "ifeq(%1,0,-10
+,%1)" | ccdfits - $out.den.fits  \[] 
+ []
+
+
+Overfull \hbox (29.00537pt too wide) in paragraph at lines 900--900
+[]    \OT1/cmtt/m/n/8 ccdmath $tmp.2.s,$tmp.0.s,$tmp.vel - "sqrt(%1/%2-%3*%3)" 
+| ccdfits - $out.sig.fits \[] 
+ []
+
+[15]
+Overfull \hbox (25.16666pt too wide) in paragraph at lines 932--943
+\OT1/cmr/m/n/10 The po-ten-tial and force-field are de-fined through two sub-ro
+u-tines named \OT1/cmtt/m/n/10 inipotential
+ []
+
+[16]
+Overfull \hbox (174.74547pt too wide) in paragraph at lines 960--960
+[]  \OT1/cmtt/m/n/10 omega           normally set to 0, since it is derived fro
+m ``lagrad'', and returned in this slot[] 
+ []
+
+
+Overfull \hbox (148.4957pt too wide) in paragraph at lines 960--960
+[]  \OT1/cmtt/m/n/10 radlag          Lagrangian radius along the bar axis, defi
+ned where the forces balance [6.0][] 
+ []
+
+
+Overfull \hbox (27.74675pt too wide) in paragraph at lines 960--960
+[]  \OT1/cmtt/m/n/10 quad            Quadrupole moment, measures the bar streng
+th [45,000][] 
+ []
+
+
+Overfull \hbox (116.99597pt too wide) in paragraph at lines 960--960
+[]  \OT1/cmtt/m/n/10 cenden          Central Density, sets the slope of the cen
+tral velocity field [24,000][] 
+ []
+
+
+Overfull \hbox (116.99597pt too wide) in paragraph at lines 1013--1013
+[]\OT1/cmtt/m/n/10 % potccd grid0 athan92 0,1,1,2.5,6.5,0,24000 x=-17.5:17.5:0.
+07 y=-17.5:17.5:0.07 omega=0[] 
+ []
+
+
+Overfull \hbox (69.74638pt too wide) in paragraph at lines 1013--1013
+[]\OT1/cmtt/m/n/10 COMMENT  FITS (Flexible Image Transport System) format is de
+fined in 'Astronomy[] 
+ []
+
+[17]
+Overfull \hbox (64.49643pt too wide) in paragraph at lines 1013--1013
+[]\OT1/cmtt/m/n/10 COMMENT  and Astrophysics', volume 376, page 359; bibcode: 2
+001A&A...376..359H[] 
+ []
+
+
+Overfull \hbox (69.74638pt too wide) in paragraph at lines 1013--1013
+[]\OT1/cmtt/m/n/10 HISTORY  potccd grid0 athan92 0,1,1,2.5,6.5,0,24000 x=-17.5:
+17.5:0.07 y=-17.5:1[] 
+ []
+
+
+Overfull \hbox (6.74693pt too wide) in paragraph at lines 1034--1034
+[]\OT1/cmtt/m/n/10 cvs -d :pserver:anonymous@cvs.astro.umd.edu:/home/cvsroot co
+ cmhog2[] 
+ []
+
+
+Overfull \hbox (80.24629pt too wide) in paragraph at lines 1034--1034
+[]\OT1/cmtt/m/n/10 configure --help              (study the options you may whi
+ch to use, see below)[] 
+ []
+
+[18]
+Overfull \hbox (64.49643pt too wide) in paragraph at lines 1051--1051
+[]  \OT1/cmtt/m/n/10 --disable-FEATURE       do not include FEATURE (same as --
+enable-FEATURE=no)[] 
+ []
+
+
+Overfull \hbox (59.24648pt too wide) in paragraph at lines 1051--1051
+[]  \OT1/cmtt/m/n/10 --enable-cfitsio        enable it, the default is that it 
+won't use CFITSIO[] 
+ []
+
+
+Overfull \hbox (48.74657pt too wide) in paragraph at lines 1051--1051
+[]  \OT1/cmtt/m/n/10 --without-PACKAGE          do not use PACKAGE (same as --w
+ith-PACKAGE=no)[] 
+ []
+
+
+Overfull \hbox (43.49661pt too wide) in paragraph at lines 1051--1051
+[]  \OT1/cmtt/m/n/10 --with-pgmax=SIZE          Maxim size grid that can be rea
+d with cfitsio[] 
+ []
+
+
+Overfull \hbox (69.74638pt too wide) in paragraph at lines 1051--1051
+[]  \OT1/cmtt/m/n/10 --with-cfitsio-prefix=PFX  prefix where cfitsio lives (lib
+,include or sourse)[] 
+ []
+
+[19]
+Overfull \hbox (5.12494pt too wide) in paragraph at lines 1062--1068
+\OT1/cmr/m/n/10 through the bar growth time, 0.1Gyr, on a small $67 \OMS/cmsy/m
+/n/10 ^^B \OT1/cmr/m/n/10 40$ grid (see \OT1/cmtt/m/n/10 cmhogin.bench\OT1/cmr/
+m/n/10 ).
+ []
+
+
+Overfull \hbox (79.8785pt too wide) in paragraph at lines 1073--1119
+ [][] 
+ []
+
+[20] [21] (./hydro.aux) ) 
+Here is how much of TeX's memory you used:
+ 741 strings out of 95847
+ 8656 string characters out of 1195949
+ 65658 words of memory out of 1000001
+ 3709 multiletter control sequences out of 10000+50000
+ 10317 words of font info for 37 fonts, out of 500000 for 1000
+ 14 hyphenation exceptions out of 1000
+ 25i,15n,24p,442b,412s stack positions out of 1500i,500n,5000p,200000b,5000s
+
+Output written on hydro.dvi (21 pages, 50180 bytes).

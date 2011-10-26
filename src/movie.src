@@ -1,0 +1,123 @@
+#include "cmhog.def"
+c=======================================================================
+c/////////////////////////  SUBROUTINE MOVIE  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine movie(filename1,filename2,filename3)
+c
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "root.h"
+      character*9  filename,filename1,filename2,filename3
+      character*1  image(icartx,icarty)
+c
+c
+      integer i,j,k,jx,kx,jpn,jmn,kpn,kmn,ival
+      integer irecl,mcount
+      real dcon,cartxr,cartxl,cartytop,cartybot,delx,dely
+      real cartx(icartx),carty(icarty),cartrad,cartthe,scrtch
+      real c1,c2,c3,c4,a1,a2
+      real varint(jn,kn),grav
+      external bvaldz,bvalvz,bvalwz
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\///////////////////////////////
+c=======================================================================
+c
+      irecl=icartx*icarty
+      call bvaldz
+      call bvalvz
+      call bvalwz
+      do 100 mcount=1,3
+        if (mcount.eq.1) then
+          do 11 j=js,je 
+          do 11 k=ks,ke+1
+cpjt            varint(j,k)=d(j,k)
+            varint(j,k)=d(j,k)-10.0
+11        continue
+          filename=filename1
+          cmax=cma1
+          cmin=cmi1 
+          cmax=-0.1
+          cmin=0.1 
+        endif
+c
+        if (mcount.eq.2) then
+          do 12 j=js,je 
+          do 12 k=ks,ke+1
+            varint(j,k)=v(j,k)
+12        continue
+          filename=filename2
+          cmax=cma2
+          cmin=cmi2 
+        endif
+c
+        if (mcount.eq.3) then
+          do 13 j=js,je 
+          do 13 k=ks,ke+1
+            grav=(1-barfract)*diskycen(j,k)+barfract*barycen(j,k)
+     &           +spifract*spycen(j,k) 
+            varint(j,k)=w(j,k)-sqrt(abs(radius(j)*grav))
+13        continue
+          filename=filename3
+          cmax=cma3
+          cmin=cmi3 
+        endif
+c
+      dcon=253./(cmax-cmin)
+c
+      cartxr=y(je+1)
+      cartxl=-y(je+1)
+      cartytop=cartxr
+      cartybot=cartxl
+c
+      delx=(cartxr-cartxl)/icartx
+      dely=(cartytop-cartybot)/icarty
+      do 20 i=1,icartx
+	cartx(i)=cartxl+real(i-1)*delx
+20    continue
+      do 30 j=1,icarty
+	carty(j)=cartybot+real(j-1)*dely
+30    continue
+c
+      do 40 i=(icartx/2)+1,icartx
+      do 40 j=1,icarty
+	cartrad=sqrt(cartx(i)**2+carty(j)**2)
+	cartthe=atan(carty(j)/(cartx(i)+tiny))
+	if ((cartrad.gt.y(je)).or.(cartrad.lt.y(js))) then
+	  scrtch=0.0
+        else
+          do 50 jx=js+1,je
+	    if (y(jx).ge.cartrad) goto 60
+50        continue
+60        jpn=jx
+	  jmn=jx-1
+	  do 70 kx=ks+1,ke+1
+	    if (z(kx).ge.cartthe) goto 80
+70        continue
+80        kpn=kx
+	  kmn=kx-1
+	  c1=(cartrad-y(jpn))/(y(jmn)-y(jpn))
+	  c2=(cartrad-y(jmn))/(y(jpn)-y(jmn))
+	  c3=(cartthe-z(kpn))/(z(kmn)-z(kpn))
+	  c4=(cartthe-z(kmn))/(z(kpn)-z(kmn))
+	  a1=varint(jmn,kmn)*c1+varint(jpn,kmn)*c2
+	  a2=varint(jmn,kpn)*c1+varint(jpn,kpn)*c2
+          if (mcount.eq.1) then
+cpjt	    scrtch=(log10(a1*c3+a2*c4)-cmin)*dcon
+            scrtch=((a1*c3+a2*c4)-cmin)*dcon
+          else
+	    scrtch=((a1*c3+a2*c4)-cmin)*dcon
+          endif
+        endif
+	ival=int(scrtch)
+        image(i,icarty+2-j)=char(min(max(1,ival),253))
+        image(icartx+2-i,j)=char(min(max(1,ival),253))
+40    continue
+      open(unit=15,file=filename,status='unknown',access='direct',
+     &  form='unformatted',recl=irecl)
+      write(15,rec=1) ((image(i,j),i=1,icartx),j=1,icarty)
+      close(unit=15)
+100   continue
+c
+      return
+      end

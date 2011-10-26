@@ -1,0 +1,172 @@
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE GALAXY  \\\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine galaxy
+c
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "root.h"
+#include "field.h"
+c-----------------------------------------------------------------------
+      integer i,j,k,ndim,npar,seed
+      real arg,uran
+      character name*5
+      real*8 amp,omega,amode,n,aob,qm,rhoc
+      real*8 par(8),pos(3),acc(3),pot,dumtime
+      external inipotential,potential
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////
+c=======================================================================
+c
+c     assumed that igrav=1 and igeom=1
+      namelist /pgen/ amp,npar,amode,n,aob,rl,qm,rhoc,bartime
+      namelist /spiral/ spamp,spsc,spang,sppat,sr,pc
+c      namelist /blobs/ seed,bfrac,bamp
+      omega=0.0
+      ndim=3
+      npar=7
+      name='dummy'
+      read (1,pgen)
+      write(2,pgen)
+      read (1,spiral)
+      write(2,spiral)
+cpjt      read (1,blobs)
+cpjt      write(2,blobs)
+c
+C
+      do 5 i=1,npar
+	if (i.eq.1) par(i)=omega
+	if (i.eq.2) par(i)=amode
+	if (i.eq.3) par(i)=n
+	if (i.eq.4) par(i)=aob
+	if (i.eq.5) par(i)=rl
+	if (i.eq.6) par(i)=0.0
+	if (i.eq.7) par(i)=rhoc
+5     continue
+c
+c
+      call inipotential(npar,par,name)
+C   
+      if (nyz.gt.1) then
+	do 7 k=ks,ke+1
+	do 7 j=js-3,je+3
+          pos(1)=y(j)*cos(zcenteul(k))
+	  pos(2)=y(j)*sin(zcenteul(k))
+	  pos(3)=0.0
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  diskyed(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			 +(acc(2)*sin(zcenteul(k)))
+	  pos(1)=radius(j)*cos(zcenteul(k))
+	  pos(2)=radius(j)*sin(zcenteul(k))
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  diskycen(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			  +(acc(2)*sin(zcenteul(k)))
+7       continue
+      endif
+c
+      par(6)=qm
+      call inipotential(npar,par,name)
+c
+      if (nyz.gt.1) then
+	do 9 k=ks,ke+1
+	do 9 j=js-3,je+3
+          pos(1)=y(j)*cos(zcenteul(k))
+	  pos(2)=y(j)*sin(zcenteul(k))
+	  pos(3)=0.0
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  baryed(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			+(acc(2)*sin(zcenteul(k)))
+	  pos(1)=radius(j)*cos(zcenteul(k))
+	  pos(2)=radius(j)*sin(zcenteul(k))
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  barycen(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			 +(acc(2)*sin(zcenteul(k)))
+          if (y(j).gt.sr) then
+            arg=2.0*((log(y(j)-sr)/tan(spang))-zcenteul(k))+pc
+            spyed(j,k)=-spamp*(y(j)-sr)**2*exp(-spsc*(y(j)-sr))*
+     &                ((3.0-spsc*(y(j)-sr))*cos(arg)-
+     &                (2.0/tan(spang))*sin(arg))
+          else
+            spyed(j,k)=0.0
+          endif
+c          if (y(j).gt.16.) then
+c            spyed(j,k)=spyed(j,k)*exp(16.0-y(j))
+c          endif
+          if (radius(j).gt.sr) then
+            arg=2.0*((log(radius(j)-sr)/tan(spang))-zcenteul(k))+pc
+            spycen(j,k)=-spamp*(radius(j)-sr)**2*
+     &                 exp(-spsc*(radius(j)-sr))*
+     &                 ((3.0-spsc*(radius(j)-sr))*cos(arg)-
+     &                 (2.0/tan(spang))*sin(arg))
+          else
+            spycen(j,k)=0.0
+          endif
+c          if (radius(j).gt.16.) then
+c            spycen(j,k)=spycen(j,k)*exp(16.0-radius(j))
+c          endif
+9       continue
+      endif
+C
+      if (nzz.gt.1) then
+	do 10 j=js,je
+	do 10 k=ks-1,ke+1
+          pos(1)=radius(j)*cos(z(k))
+	  pos(2)=radius(j)*sin(z(k))
+	  pos(3)=0.0
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  barzed(j,k)=(acc(1)*sin(z(k)))-(acc(2)*cos(z(k)))
+	  pos(1)=radius(j)*cos(zcenteul(k))
+	  pos(2)=radius(j)*sin(zcenteul(k))
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  barzcen(j,k)=(acc(1)*sin(zcenteul(k)))
+     &			 -(acc(2)*cos(zcenteul(k)))
+          if (radius(j).gt.sr) then
+            arg=2.0*((log(radius(j)-sr)/tan(spang))-z(k))+pc
+            spzed(j,k)=-2.0*spamp*(radius(j)-sr)**2*
+     &                 exp(-spsc*(radius(j)-sr))*sin(arg)
+            arg=2.0*((log(radius(j)-sr)/tan(spang))-zcenteul(k))+pc
+            spzcen(j,k)=-2.0*spamp*(radius(j)-sr)**2*
+     &                 exp(-spsc*(radius(j)-sr))*sin(arg)
+          else
+            spzed(j,k)=0.0
+            spzcen(j,k)=0.0
+          endif
+c          if (radius(j).gt.16.) then
+c            spzed(j,k)=spzed(j,k)*exp(16.0-radius(j))
+c            spzcen(j,k)=spzcen(j,k)*exp(16.0-radius(j))
+c          endif
+10     continue
+      endif
+c
+      if (bfrac.gt.0.0) then
+        if (seed.ge.0) uran = rand(seed)
+      endif
+      do 11 k=ks,ke
+      do 11 j=js,je
+	d(j,k)=amp
+        if (bfrac.gt.0.0 .and. seed.ge.0) then
+            uran = rand(0)
+            if (uran.lt.bfrac) then
+                d(j,k) = d(j,k) + bamp
+            endif
+        endif
+	w(j,k)=sqrt(abs(radius(j)*diskycen(j,k)))
+11    continue
+c           handle some special test cases that we programmed
+      if (seed.eq.-1) then
+          d(j/2,k/2) = d(j/2,k/2)  + bamp
+      endif
+      vgz=par(1)
+      vspiral=sppat-vgz
+C
+c      open (unit=7,file='spforces.dat')
+c      do 12 k=ks,ke
+c      do 12 j=js,je
+c       write (7,13) diskycen(j,k),spycen(j,k),spzcen(j,k) 
+c13     format (3e14.5) 
+c12    continue
+c      close (unit=7)
+c      stop 
+      return
+      end

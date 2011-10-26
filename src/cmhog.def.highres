@@ -1,0 +1,18 @@
+#define UNIX
+#define SUN
+#define TEUBEN
+#define NO_OF_J_ZONES  257
+#define NO_OF_K_ZONES  160
+#define MAX_OF_IJK     257
+#define IMG_X          256 
+#define IMG_Y          256 
+
+#define RESTART           empty
+#define GRID_GENERATOR    ggen
+#define PROBLEM_GENERATOR galaxy
+#define R_SOLVER          isoshockquad
+#define SPECIAL           empty
+
+#define NONE undefined(a-z)
+#define A_BIG_NUMBER   1.0e+10
+#define A_SMALL_NUMBER 1.0e-10

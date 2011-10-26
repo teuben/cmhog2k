@@ -1,0 +1,33 @@
+This is 'cmhog', revision 2 (cmhog2). A PPM code to simulate the 2D gas
+flow in a barred galaxy. It is based on the code Piner, Stone and Teuben
+published in their 1995 (ApJ xxx,yyy) article.
+
+Although the code stands alone, it is useful to have the MIRIAD, and
+especially, NEMO package around. See hydro.tex in the documentation
+tree for suggestions how to use the code.
+
+Some of the tools may be reproduced in $NEMO/src/image/hdf/cmhog, although
+we attempt to keep the two synchronized
+
+
+April 2002
+Peter Teuben
+
+
+---
+Updates:
+
+September 2002:
+    piner94.src can now initialize an internal grid for testing
+	 $pgrid $ 
+    is needed in cmhogin. 
+    a potential on a grid can now be read in, and gas   (TODO)
+
+April 2003:
+    piner94.src : added vhalo,rhalo to  /pgrid/
+    
+
+
+Known problems:
+
+- numeric grid potential from barred potential not stable enough

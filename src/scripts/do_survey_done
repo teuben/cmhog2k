@@ -1,0 +1,81 @@
+#! /bin/csh -f
+#
+#
+#  here is an example how to setup a whole set of experiments
+#  
+#
+
+set log=survey_done.log
+set n=0
+set s=../survey1
+set hdf=hdf010bg
+
+foreach arg ($*)
+    set $arg
+end
+
+####  a=aob   b=rl   c=qm  d=rhoc
+
+set a_s=(1.5   2.0   2.5    3.0    3.5)
+set b_s=(5.0   5.5   6.0    6.5    7.0)
+set c_s=(2.5e4 5.0e4 7.5e4 10.0e4 12.5e4)
+set d_s=(1.0e4 1.5e4 2.0e4  2.5e4  3.0e4 3.5e4)
+
+
+echo "Models:  survey=$s  hdf=$hdf"
+echo " . means model exists, * means model did not run"
+echo "------------------------------------------------------------------------"
+echo ""
+
+foreach j (`nemoinp 1:$#b_s`)
+set b=$b_s[$j]
+
+foreach k (`nemoinp 1:$#c_s`)
+set c=${c_s[$k]}
+
+foreach i (`nemoinp 1:$#a_s`)
+set a=$a_s[$i]
+echo -n "| "
+
+foreach l (`nemoinp 1:$#d_s`)
+set d=${d_s[$l]}
+
+  set rundir=$s/run_${a}_${b}_${c}_${d}
+  if (! -e $rundir/$hdf) then
+    echo -n "* "
+  else
+    echo -n ". "
+  endif
+end #l
+end #i
+  echo -n " |"
+  if ($k == 1) then
+    echo " rl=$b"
+  else
+    echo " "
+  endif
+end #k
+  echo "  "
+end #j
+
+echo ""
+echo "------------------------------------------------------------------------"
+
+
+echo ""
+foreach i (`nemoinp 1:$#a_s`)
+  echo -n " aob=$a_s[$i]      "
+end
+echo ""
+echo Small matrix:
+
+echo -n "    rhoc= "
+foreach l (`nemoinp 1:$#d_s`)
+   echo -n "$d_s[$l] "
+end
+echo ""
+echo ver: qm=
+foreach k (`nemoinp 1:$#c_s`)
+  echo " $c_s[$k]"
+end
+

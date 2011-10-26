@@ -1,0 +1,30 @@
+#! /bin/csh -f
+#
+#
+
+
+set s=../survey1/
+
+set aob=2.5
+set rl=6.0
+set qm=5.0
+set rhoc=2.5
+
+set out=mod000
+
+foreach arg ($*)
+   set $arg
+end
+
+set rundir=$s/run_${aob}_${rl}_${qm}e4_${rhoc}e4
+set in=$rundir/hdf010bg
+
+if (-e $in) then
+  rm -rf $out.*
+  mkbar_cube.csh par=n4303.par in=$in cube=0 out=$out
+else
+  cp zero.fits $out.den.fits
+  cp zero.fits $out.vel.fits
+  cp zero.fits $out.sig.fits
+endif
+

@@ -1,0 +1,49 @@
+#! /bin/csh -f
+#
+#   like bench1, but now with a grid file, so FITSIO needs
+#   to be enabled
+
+if ($#argv == 0) exit 0
+
+set dir=$1
+
+if ($?NEMO == 0) then
+  echo Need NEMO to run this
+  exit 0
+endif
+
+if (-e $dir) then
+  echo $dir already exist
+  exit 1
+else
+  mkdir $dir
+  cp cmhogin.bench2 $dir/cmhogin
+endif
+
+cd $dir
+ln -s ../bench2/grid0.fits
+ln -s ../bench2/grid1.fits
+echo RUNNING CMHOG BENCHMARK2 
+time ../cmhog >& cmhog.log
+
+#  linux run w/ "-g -O2"
+set h1="Data min/max = -53.7278 66.6728"
+set h2="Data min/max = 31.39 240.978"
+set h3="Data min/max = 0.835872 34.9362"
+
+echo COMPARING OUTPUT min/max and maps with saved version:
+foreach i (1 2 3)
+  echo "================== MAP $i ===================="
+  sdsfits hdf0001bg map$i.fits $i |& grep min/max
+  if ($i == 1) then
+    echo "$h1 (baseline version)"
+  else if ($i == 2) then
+    echo "$h2 (baseline version)"
+  else 
+    echo "$h3 (baseline version)"
+  endif
+  fitsccd map$i.fits map$i.ccd >& /dev/null
+  ccdmath ../bench2/map$i.ccd,map$i.ccd - %1-%2 | ccdstat -
+end
+  echo "=============================================="
+

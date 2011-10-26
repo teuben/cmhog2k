@@ -1,0 +1,28 @@
+#! /bin/csh -f
+#
+#
+#  here is an example how to setup a whole set of experiments
+#  
+#
+
+set aob_s=(1.5 2.0 2.5 3.0 3.5)
+set rl_s=(5.0 5.5 6.0 6.5 7.0)
+set qm_s=(2.5 5.0 7.5 10.0 12.5)
+set rhoc_s=(1.0 1.5 2.0 2.5 3.0 3.5)
+
+foreach i (`nemoinp 1:$#aob_s`)
+ set aob=$aob_s[$i]
+ foreach j (`nemoinp 1:$#rl_s`)
+  set rl=$rl_s[$j]
+  foreach k (`nemoinp 1:$#qm_s`)
+   set qm=${qm_s[$k]}e4
+   foreach l (`nemoinp 1:$#rhoc_s`)
+    set rhoc=${rhoc_s[$l]}e4
+    set rundir=run_${aob}_${rl}_${qm}_${rhoc}
+    if (-d $rundir) continue
+    echo runcmhog $rundir aob=$aob rl=$rl qm=$qm rhoc=$rhoc 
+    runcmhog $rundir aob=$aob rl=$rl qm=$qm rhoc=$rhoc 
+   end
+  end
+ end
+end

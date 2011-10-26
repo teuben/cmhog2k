@@ -1,0 +1,108 @@
+#include "cmhog.def"
+c=======================================================================
+c//////////////////////////  SUBROUTINE SETUP  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine setup
+c
+c  SETS UP CONTROL PARAMETERS, GRID, BC, EOS, AND IC FOR NEW RUN
+c
+c  written by: Jim Stone
+c  date:       January, 1991
+c  modified1:
+c
+c  PURPOSE:
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+#include "root.h"
+c-----------------------------------------------------------------------
+      integer j,k
+      external GRID_GENERATOR,PROBLEM_GENERATOR,nudt
+      namelist /hycon/ nlim,tlim,tsave,ttotal,co,pmin,idiff,ifltn,istp
+     &   ,dfloor,vfloor,wfloor
+      namelist /ijb/ nijb, dijb, vijb, wijb
+      namelist /ojb/ nojb, dojb, vojb, wojb
+      namelist /ikb/ nikb, dikb, vikb, wikb
+      namelist /okb/ nokb, dokb, vokb, wokb
+      namelist /eos/ ciso
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\///////////////////////////////////
+c=======================================================================
+c
+      nlim   = 1 000 000
+      tlim   = 0.0
+      tsave  = 60.0
+      ttotal = 100.0*(3600.0)
+      co     = 0.5
+      pmin   = tiny
+      idiff  = 1
+      ifltn  = 0
+      istp   = 0
+      dfloor = tiny
+      vfloor = tiny
+      wfloor = tiny
+      read (1,hycon)
+      write(2,hycon)
+c
+      call GRID_GENERATOR
+c
+      do 30 k=1,kn
+          nijb(k) = 2
+          dijb(k) = dfloor
+          vijb(k) = vfloor
+          wijb(k) = wfloor
+30    continue
+      read (1,ijb)
+      write(2,ijb)
+c
+      do 40 k=1,kn
+          nojb(k) = 2
+          dojb(k) = dfloor
+          vojb(k) = vfloor
+          wojb(k) = wfloor
+40    continue
+      read (1,ojb)
+      write(2,ojb)
+c
+      do 50 j=1,jn
+          nikb(j) = 4
+          dikb(j) = dfloor
+          vikb(j) = vfloor
+          wikb(j) = wfloor
+50    continue
+      read (1,ikb)
+      write(2,ikb)
+c
+      do 60 j=1,jn
+          nokb(j) = 4
+          dokb(j) = dfloor
+          vokb(j) = vfloor
+          wokb(j) = wfloor
+60    continue
+      read (1,okb)
+      write(2,okb)
+c
+      read (1,eos)
+      write(2,eos)
+c
+c  Initialize all field variables to floor values and call problem
+c
+      do 70 k=1,kn
+      do 70 j=1,jn
+        d(j,k) = dfloor
+        v(j,k) = vfloor
+        w(j,k) = wfloor
+70    continue
+      call PROBLEM_GENERATOR
+c
+c  Initial timestep
+c
+      dt = huge
+      call nudt
+      dtmin = dt/100.0
+c
+      return
+      end

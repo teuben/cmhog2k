@@ -1,0 +1,35 @@
+- if dtmovie=0.0, don't even write the movie files at t=0
+
+- gcc/cpp needs -traditional, starting with gcc 2.96
+
+- intel compiler in autoconf
+
+- if no HDF4 libraries found
+
+- /lib/cpp for native sun compiler
+  (but watch, some talk about deprecating important features in gcc3 series)
+
+- setenv LD_LIBRARY_PATH /local/lib on e.g. astr.dept.
+
+- native compiler on solaris
+	setenv CC cc
+	setenv F77 f77
+	setenv CPP /lib/cpp	
+	setenv CFLAGS -fast
+	setenv FFLAGS -fast
+	configure
+	make cmhog
+	setenv LD_LIBRARY_PATH /local/lib 
+
+- gnu compiler on solaris:
+
+- intel compiler on linux
+	setenv CC icc
+	setenv F77 ifc
+	setenv CPP "gcc -E -traditional"
+	configure
+	make cmhog
+
+- Portland Compiler (pgc,pgfc)
+
+make 

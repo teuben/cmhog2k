@@ -1,0 +1,30 @@
+#include "cmhog.def"
+c=======================================================================
+c//////////////////////////  SUBROUTINE CUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine cut(d,v)
+c
+c
+c  PURPOSE:  CUTTING THE LIMITATION OF LOW DENSITY AND HIGH VELOCITY
+c            TO AVOID COMPUTATIONAL CRUSH
+c
+c  INPUT: d,v
+c
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "root.h"
+      real   d(jn,kn),v(jn,kn)
+      real   dlim,vlim
+      integer j,k
+
+      dlim = 1.e-12
+      vlim = 1.e3
+
+      do 10 j=1,jn
+         do 10 k=1,kn
+            if (d(j,k).lt.dlim) d(j,k)=dlim
+c            if (v(j,k).gt.vlim) v(j,k)=vlim
+   10 continue
+      return
+      end

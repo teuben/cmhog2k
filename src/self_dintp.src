@@ -1,0 +1,95 @@
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE self_dintp  \\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine self_dintp(den)
+#ifdef SELFGRAV
+#ifdef CARTESIAN 
+c 
+c Written by Doosu Yoon 
+c
+c-----------------------------------------------------------------------
+c      implicit none
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "grav.h"
+
+      real den(jn,kn), deld(jn,kn)
+
+      integer j,k
+      real avgd,sum
+
+      integer dNxx,dNyy,ird,ith, reyy, dNyy2,reyy2
+      real    frd, fth
+
+#ifdef NO_IFORT
+      do 10 k=1,kn
+         do 10 j=1,jn
+c            deld(j,k) = den(j,k) 
+            deld(j,k) = den(j,k) - d_init(j,k)
+   10 continue
+#endif
+#ifndef NO_IFORT
+c      deld(:,:) = den(:,:) 
+      deld(:,:) = den(:,:) - d_init(:,:)
+#endif
+
+c mean density at the innermost radial grid
+      sum = 0.
+      do k=1,kn-6
+         sum = sum + deld(js,k)
+      enddo
+      avgd = sum/float(kn-6)
+c
+      dNyy = inNyy - Nyy/2 - 1
+
+      do 20 k = Nyy/2-dNyy, inNyy
+         do 20 j = Nxx/2+1, inNxx
+
+            if (xy_rdd(j,k).lt.0) then
+               din(j,k) = avgd
+             else if (xy_rdd(j,k).ne.0) then 
+               ird = xy_rdd(j,k)
+               frd = xy_frd(j,k)
+               ith = xy_thd(j,k)
+               fth = xy_fth(j,k)
+               din(j,k) = (1.-fth)*((1.-frd)*deld(ird  , ith  )
+     &                                 +frd *deld(ird+1, ith  ))
+     &                       +fth *((1.-frd)*deld(ird  , ith+1)
+     &                                 +frd *deld(ird+1, ith+1))
+            endif
+c reflection to left side from right side.
+               dNxx = j - Nxx/2 - 1
+
+c               if (k.le.Nyy/2) then
+c                  dNyy2 = Nyy/2 - k
+c                  reyy2 = Nyy/2+1+dNyy
+c                  din(Nxx/2-dNxx,Nyy/2+1+dNyy) = din(j,k)
+c                else
+c                  dNyy2 = k - Nyy/2 - 1
+c                  reyy2 = Nyy/2-dNyy
+c                  din(Nxx/2-dNxx,Nyy/2-dNyy) = din(j,k)
+c               endif
+c               print*,dNyy,dNyy2
+c               if (reyy.ne.reyy2) print*,j,k,dNyy,dNyy2
+
+c  Optimization with using sign function 
+               dNyy = sign(1,Nyy/2-k)*(Nyy/2 - k)
+     &               +sign(0.5,float(Nyy/2-k))-0.5
+               reyy = Nxx/2 + sign(dNyy,Nyy/2-k)
+     &               +sign(0.5,float(Nyy/2-k))+0.5
+               din(Nxx/2-dNxx, reyy) = din(j,k)
+20    continue
+
+c      open(unit=124,file='tmp_din.dat',status='unknown'
+c     &     ,form='unformatted')
+c      write(124) (xc(j),j=1,Nxx),(yc(k),k=1,Nyy)
+c      write(124) ((din(j,k),j=1,Nxx),k=1,Nyy)
+c      close(unit=124)
+c      stop
+#endif  /*CARTESIAN*/
+#endif  /*SELFGRAV*/
+      return 
+      end
+

@@ -1,0 +1,26 @@
+#! /bin/csh -f
+#
+#
+
+set aob_s=(1.5 2.0 2.5 3.0 3.5)
+set rl_s=(5.0 5.5 6.0 6.5 7.0)
+set qm_s=(2.5 5.0 7.5 10.0 12.5)
+set rhoc_s=(1.0 1.5 2.0 2.5 3.0 3.5)
+
+
+
+set aob=2.5
+set rl=6.0
+
+foreach arg ($*)
+   set $arg
+end
+
+foreach k (`nemoinp 1:$#qm_s`)
+foreach l (`nemoinp 1:$#rhoc_s`)
+  set out=mod${k}${l}
+  do_fit out=$out aob=$aob rl=$rl rhoc=$rhoc_s[$l] qm=$qm_s[$k]
+  mirds9 $out.vel.fits
+end
+end
+

@@ -1,0 +1,161 @@
+#=======================================================================
+#  MASTER MAKEFILE FOR CMHOG CODE
+#    written by: Jim Stone
+#    date:       January, 1991
+#    modified1:  August, 1994		using FFLAGS/LDFLAGS		pjt
+#    linux:	 Oct, 2000
+#    autoconfed' for cmhog V2:   Mar 2001
+#-------------------  object files  ------------------------------------
+
+COBJ =  bcdflt.c checkin.c
+
+SOBJ =  bval.src     \
+	cvmgt.src    \
+	dataio.src   \
+	findno.src   \
+	ggen.src     \
+	hdfall.src   \
+	hdump.src    \
+	intchk.src   \
+	main.src     \
+        movie.src    \
+	mstart.src   \
+	nudt.src     \
+	setup.src    \
+	solver.src   \
+	strtoi.src   \
+	isoshockquad.src \
+	yintlgrg.src \
+	yintrmp.src  \
+	ylgrg.src    \
+	yremap.src   \
+	zintlgrg.src \
+	zintrmp.src  \
+	zlgrg.src    \
+	zremap.src   \
+	piner94.src  
+
+OBJ = $(COBJ:c=o) $(SOBJ:src=o) ${PROB}.o ${SPEC}.o
+
+INC = bndry.h field.h param.h scratch.h cvmgt.h grid.h root.h
+
+SRC = Makefile $(COBJ) $(SOBJ) $(INC) cmhog.def cmhogin  \
+	$(SPEC).src  $(PROB).src
+
+#-------------------  macro definitions  -------------------------------
+.SUFFIXES:
+.SUFFIXES: .src .c .f .o
+
+SPEC   = empty
+PROB   = galaxy
+
+# CPP notes:
+#	for the intel compiler, use 'gcc -E -traditional'
+#	for newer (2.96 and above) gnu, also add '-traditional'
+#       for solaris, should use /lib/cpp 
+#       NOTE: gcc3.3 will remove -traditional support......
+# 	will need to use the traditional preprocessor
+#	also check:  -traditional-cpp
+#  -fugly-logint #automatic conversion between logical and int (for cvmgt)
+#  macosx need /usr/bin/cpp for CPP
+CPP    = @CPP@
+CMFLAGS= @CMFLAGS@
+FC     = @F77@
+FFLAGS = @FFLAGS@
+CC     = @CC@
+LDFLAGS= @CFLAGS@
+
+# LIB notes:
+#  for the intel compiler, add -Vaxlib
+#  for solaris, may also need to add LD_LIBRARY_PATH to environment
+#  for mac os x you need to get HDF of course 
+#  e.g. 
+XHDF_HOME = /sw/lib
+# Eve's laptop
+XHDFLIB = $(HDF_HOME)/libmfhdf.a $(HDF_HOME)/libdf.a \
+         $(HDF_HOME)/libjpeg.a  $(HDF_HOME)/libz.1.dylib
+# Peter's braindead finked machine
+# also needed CC=/usr/bin/gcc FC=/sw/bin/g77, go figure
+# else two undefined variables are left....   restFP, saveFP
+YHDFLIB = $(HDF_HOME)/libdf.a $(HDF_HOME)/libjpeg.62.dylib  /usr/lib/libz.1.dylib
+
+CFITSIO = @CFITSIO_LIB@
+LIB    = -L/usr/local/lib -L/local/lib -ldf -lz -ljpeg $(CFITSIO)
+
+
+#--------------------  implicit rules  ---------------------------------
+#  notice the awkward way of src->f, because gcc/cpp is only portably
+#  defined for .c files!
+.src.o:
+	cp $<  tmp.$*.c; 
+	$(CPP) -P $(CMFLAGS) tmp.$*.c > $*.f
+	rm -f tmp.$*.c
+	${FC} ${FFLAGS} -c $*.f 
+.c.o:
+	${CC} ${CFLAGS} -c $<
+#---------------------  targets  ---------------------------------------
+help:
+	@echo no help
+	@echo  GENERIC: build=@build@ host=@host@ target=@target@
+	@echo  alias:  build=@build_alias@ host=@host_alias@ target=@target_alias@
+	@echo  cpu:  build=@build_cpu@ host=@host_cpu@ target=@target_cpu@
+	@echo  os:  build=@build_os@ host=@host_os@ target=@target_os@
+
+
+#-----------------------------------------------------------------------
+clean:
+	rm -fr *.o *.f cmhog run1
+cleanall: clean
+	rm -fr config.cache config.log config.status
+#-----------------------------------------------------------------------
+tar:	cmhog.tar
+
+cmhog.tar: $(SRC)
+	@echo Creating new tar file cmhog.tar
+	@tar cf cmhog.tar $(SRC)
+#-----------------------------------------------------------------------
+
+cmhog: ${OBJ} 
+	${FC} ${LDFLAGS} -o cmhog ${OBJ} ${LIB}
+
+#${PROB}.o: ${PROB}.src
+#	$(CPP) -P ${PROB}.src > ${PROB}.f
+#	${FC} ${FFLAGS} -c ${PROB}.f
+#
+#${SPEC}.o: ${SPEC}.src
+#	$(CPP) -P ${SPEC}.src > ${SPEC}.f
+#	${FC} ${FFLAGS} -c ${SPEC}.f
+
+testgrid: testgrid.src
+	cp testgrid.src testgrid.f
+	${FC} ${FFLAGS} -o testgrid testgrid.f
+
+grid:	grid.c
+	$(CC) -I$(NEMOINC) -I$(NEMOLIB) -o grid grid.c -L$(NEMOLIB) -lnemo -lm
+
+#-----------------------------------------------------------------------
+
+RUN = run1
+
+bench:  $(RUN)
+
+$(RUN):   cmhog
+	./runbench $(RUN)
+	echo FFLAGS=$(FFLAGS) CFLAGS=$(CFLAGS)
+
+#-----------------------------------------------------------------------
+#
+# old targets
+#
+cray: cray_cmhog
+
+cray_cmhog: ${OBJ} ${PROB}.o ${SPEC}.o
+	${FC} ${LDFLAGS} -o cmhog ${OBJ} ${PROB}.o ${SPEC}.o 
+
+convex: convex_cmhog
+
+convex_cmhog:
+	@echo not installed yet
+
+#-----------------------------------------------------------------------
+

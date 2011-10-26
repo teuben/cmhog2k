@@ -1,0 +1,390 @@
+#include "cmhog.def"
+c=======================================================================
+c//////////////  SUBROUTINES BVAL* (multiple routines)  \\\\\\\\\\\\\\\\
+c
+c  BOUNDARY VALUE ROUTINES FOR ALL DEPENDENT VARIABLES ON EACH BOUNDARY
+c
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////
+c=======================================================================
+c-------------------------  density boundary values  -------------------
+c
+      subroutine bvaldyeul
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer k
+c  include volumes because radial zones will not have 
+c  equal volumes- conserve mass
+c
+#ifdef TAPERED
+      call taper1(d,jn,kn,js,ks-3,ke+3)
+#endif 
+c  Inner J Boundary
+c
+      do 30 k=ks,ke
+        if (nijb(k) .eq. 1) d(js-1,k)=d(js,k)
+        if (nijb(k) .eq. 2) d(js-1,k)=d(js,k)
+        if (nijb(k) .eq. 3) d(js-1,k)=dijb(k)
+        if (nijb(k) .eq. 4) d(js-1,k)=d(je,k)
+c
+        if (nijb(k) .eq. 1) d(js-2,k)=d(js+1,k)
+        if (nijb(k) .eq. 2) d(js-2,k)=d(js,k)
+        if (nijb(k) .eq. 3) d(js-2,k)=dijb(k)
+        if (nijb(k) .eq. 4) d(js-2,k)=d(je-1,k)
+c
+        if (nijb(k) .eq. 1) d(js-3,k)=d(js+2,k)
+        if (nijb(k) .eq. 2) d(js-3,k)=d(js,k)
+        if (nijb(k) .eq. 3) d(js-3,k)=dijb(k)
+        if (nijb(k) .eq. 4) d(js-3,k)=d(je-2,k)
+30    continue
+c
+c  Outer J Boundary
+c
+      do 40 k=ks,ke
+        if (nojb(k) .eq. 1) d(je+1,k)=d(je,k)
+        if (nojb(k) .eq. 2) d(je+1,k)=d(je,k)
+        if (nojb(k) .eq. 3) d(je+1,k)=dojb(k)
+        if (nojb(k) .eq. 4) d(je+1,k)=d(js,k)
+c
+        if (nojb(k) .eq. 1) d(je+2,k)=d(je-1,k)
+        if (nojb(k) .eq. 2) d(je+2,k)=d(je,k)
+        if (nojb(k) .eq. 3) d(je+2,k)=dojb(k)
+        if (nojb(k) .eq. 4) d(je+2,k)=d(js+1,k)
+c
+        if (nojb(k) .eq. 1) d(je+3,k)=d(je-2,k)
+        if (nojb(k) .eq. 2) d(je+3,k)=d(je,k)
+        if (nojb(k) .eq. 3) d(je+3,k)=dojb(k)
+        if (nojb(k) .eq. 4) d(je+3,k)=d(js+2,k)
+40    continue
+      return
+      end
+c
+      subroutine bvaldylag
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer k
+c  include volumes because radial zones will not have 
+c  equal volumes- conserve mass
+c
+#ifdef TAPERED
+      call taper1(d,jn,kn,js,ks-3,ke+3)
+#endif 
+c  Inner J Boundary
+c
+      do 30 k=ks,ke
+        if (nijb(k) .eq. 1) d(js-1,k)=d(js,k)
+     &	    *rvollag(js,k)/rvollag(js-1,k)
+        if (nijb(k) .eq. 2) d(js-1,k)=d(js,k)
+     &	    *rvollag(js,k)/rvollag(js-1,k)
+        if (nijb(k) .eq. 3) d(js-1,k)=dijb(k)
+     &	    *rvollag(js,k)/rvollag(js-1,k)
+        if (nijb(k) .eq. 4) d(js-1,k)=d(je,k)
+     &	    *rvollag(je,k)/rvollag(js-1,k)
+c
+        if (nijb(k) .eq. 1) d(js-2,k)=d(js+1,k)
+     &	    *rvollag(js+1,k)/rvollag(js-2,k)
+        if (nijb(k) .eq. 2) d(js-2,k)=d(js,k)
+     &	    *rvollag(js,k)/rvollag(js-2,k)
+        if (nijb(k) .eq. 3) d(js-2,k)=dijb(k)
+     &	    *rvollag(js,k)/rvollag(js-2,k)
+        if (nijb(k) .eq. 4) d(js-2,k)=d(je-1,k)
+     &	    *rvollag(je-1,k)/rvollag(js-2,k)
+c
+        if (nijb(k) .eq. 1) d(js-3,k)=d(js+2,k)
+     &	    *rvollag(js+2,k)/rvollag(js-3,k)
+        if (nijb(k) .eq. 2) d(js-3,k)=d(js,k)
+     &	    *rvollag(js,k)/rvollag(js-3,k)
+        if (nijb(k) .eq. 3) d(js-3,k)=dijb(k)
+     &	    *rvollag(js,k)/rvollag(js-3,k)
+        if (nijb(k) .eq. 4) d(js-3,k)=d(je-2,k)
+     &	    *rvollag(je-2,k)/rvollag(js-3,k)
+30    continue
+c
+c  Outer J Boundary
+c
+      do 40 k=ks,ke
+        if (nojb(k) .eq. 1) d(je+1,k)=d(je,k)
+     &	    *rvollag(je,k)/rvollag(je+1,k)
+        if (nojb(k) .eq. 2) d(je+1,k)=d(je,k)
+     &	    *rvollag(je,k)/rvollag(je+1,k)
+        if (nojb(k) .eq. 3) d(je+1,k)=dojb(k)
+     &	    *rvollag(je,k)/rvollag(je+1,k)
+        if (nojb(k) .eq. 4) d(je+1,k)=d(js,k)
+     &	    *rvollag(js,k)/rvollag(je+1,k)
+c
+        if (nojb(k) .eq. 1) d(je+2,k)=d(je-1,k)
+     &	    *rvollag(je-1,k)/rvollag(je+2,k)
+        if (nojb(k) .eq. 2) d(je+2,k)=d(je,k)
+     &	    *rvollag(je,k)/rvollag(je+2,k)
+        if (nojb(k) .eq. 3) d(je+2,k)=dojb(k)
+     &	    *rvollag(je,k)/rvollag(je+2,k)
+        if (nojb(k) .eq. 4) d(je+2,k)=d(js+1,k)
+     &	    *rvollag(js+1,k)/rvollag(je+2,k)
+c
+        if (nojb(k) .eq. 1) d(je+3,k)=d(je-2,k)
+     &	    *rvollag(je-2,k)/rvollag(je+3,k)
+        if (nojb(k) .eq. 2) d(je+3,k)=d(je,k)
+     &	    *rvollag(je,k)/rvollag(je+3,k)
+        if (nojb(k) .eq. 3) d(je+3,k)=dojb(k)
+     &	    *rvollag(je,k)/rvollag(je+3,k)
+        if (nojb(k) .eq. 4) d(je+3,k)=d(js+2,k)
+     &	    *rvollag(js+2,k)/rvollag(je+3,k)
+40    continue
+      return
+      end
+c
+      subroutine bvaldz
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer j
+c
+c  Inner K Boundary
+c
+      do 50 j=js,je
+        if (nikb(j) .eq. 1) d(j,ks-1) = d   (j,ks  )
+        if (nikb(j) .eq. 2) d(j,ks-1) = d   (j,ks  )
+        if (nikb(j) .eq. 3) d(j,ks-1) = dikb(j     )
+        if (nikb(j) .eq. 4) d(j,ks-1) = d   (j,ke  )
+c
+        if (nikb(j) .eq. 1) d(j,ks-2) = d   (j,ks+1)
+        if (nikb(j) .eq. 2) d(j,ks-2) = d   (j,ks  )
+        if (nikb(j) .eq. 3) d(j,ks-2) = dikb(j     )
+        if (nikb(j) .eq. 4) d(j,ks-2) = d   (j,ke-1)
+c
+        if (nikb(j) .eq. 1) d(j,ks-3) = d   (j,ks+2)
+        if (nikb(j) .eq. 2) d(j,ks-3) = d   (j,ks  )
+        if (nikb(j) .eq. 3) d(j,ks-3) = dikb(j     )
+        if (nikb(j) .eq. 4) d(j,ks-3) = d   (j,ke-2)
+50    continue
+c
+c  Outer K Boundary
+c
+      do 60 j=js,je
+        if (nokb(j) .eq. 1) d(j,ke+1) = d   (j,ke  )
+        if (nokb(j) .eq. 2) d(j,ke+1) = d   (j,ke  )
+        if (nokb(j) .eq. 3) d(j,ke+1) = dokb(j     )
+        if (nokb(j) .eq. 4) d(j,ke+1) = d   (j,ks  )
+c
+        if (nokb(j) .eq. 1) d(j,ke+2) = d   (j,ke-1)
+        if (nokb(j) .eq. 2) d(j,ke+2) = d   (j,ke  )
+        if (nokb(j) .eq. 3) d(j,ke+2) = dokb(j     )
+        if (nokb(j) .eq. 4) d(j,ke+2) = d   (j,ks+1)
+c
+        if (nokb(j) .eq. 1) d(j,ke+3) = d   (j,ke-2)
+        if (nokb(j) .eq. 2) d(j,ke+3) = d   (j,ke  )
+        if (nokb(j) .eq. 3) d(j,ke+3) = dokb(j     )
+        if (nokb(j) .eq. 4) d(j,ke+3) = d   (j,ks+2)
+60    continue
+      return
+      end
+c---------------------  y-velocity boundary values  --------------------
+c
+      subroutine bvalvy
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer k
+      real q1
+c
+#ifdef TAPERED
+      call taper1(v,jn,kn,js,ks-3,ke+3)
+#endif 
+c  Inner J Boundary
+c
+      do 30 k=ks,ke
+        if (nijb(k) .eq. 1) v(js-1,k) =-v   (js  ,k)
+#ifdef OUTFLOW
+        if (nijb(k) .eq. 2) then
+           q1 = sign(0.5, v(js+1,k))
+           v(js,k)   = v(js+1,k) * (0.5 - q1)
+           v(js-1,k) = v(js,k)
+        endif
+#endif
+#ifndef OUTFLOW
+        if (nijb(k) .eq. 2) v(js-1,k) = v   (js  ,k)
+#endif
+        if (nijb(k) .eq. 3) v(js-1,k) = vijb(     k)
+        if (nijb(k) .eq. 4) v(js-1,k) = v   (je  ,k)
+c
+        if (nijb(k) .eq. 1) v(js-2,k) =-v   (js+1,k)
+        if (nijb(k) .eq. 2) v(js-2,k) = v   (js  ,k)
+        if (nijb(k) .eq. 3) v(js-2,k) = vijb(     k)
+        if (nijb(k) .eq. 4) v(js-2,k) = v   (je-1,k)
+c
+        if (nijb(k) .eq. 1) v(js-3,k) =-v   (js+2,k)
+        if (nijb(k) .eq. 2) v(js-3,k) = v   (js  ,k)
+        if (nijb(k) .eq. 3) v(js-3,k) = vijb(     k)
+        if (nijb(k) .eq. 4) v(js-3,k) = v   (je-2,k)
+30    continue
+c
+c  Outer J Boundary
+c
+      do 40 k=ks,ke
+        if (nojb(k) .eq. 1) v(je+1,k) =-v   (je  ,k)
+        if (nojb(k) .eq. 2) v(je+1,k) = v   (je  ,k)
+        if (nojb(k) .eq. 3) v(je+1,k) = vojb(     k)
+        if (nojb(k) .eq. 4) v(je+1,k) = v   (js  ,k)
+c
+        if (nojb(k) .eq. 1) v(je+2,k) =-v   (je-1,k)
+        if (nojb(k) .eq. 2) v(je+2,k) = v   (je  ,k)
+        if (nojb(k) .eq. 3) v(je+2,k) = vojb(     k)
+        if (nojb(k) .eq. 4) v(je+2,k) = v   (js+1,k)
+c
+        if (nojb(k) .eq. 1) v(je+3,k) =-v   (je-2,k)
+        if (nojb(k) .eq. 2) v(je+3,k) = v   (je  ,k)
+        if (nojb(k) .eq. 3) v(je+3,k) = vojb(     k)
+        if (nojb(k) .eq. 4) v(je+3,k) = v   (js+2,k)
+40    continue
+      return
+      end
+c
+      subroutine bvalvz
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer j
+c
+c  Inner K Boundary
+c
+      do 50 j=js,je
+        if (nikb(j) .eq. 1) v(j,ks-1) = v   (j,ks  )
+        if (nikb(j) .eq. 2) v(j,ks-1) = v   (j,ks  )
+        if (nikb(j) .eq. 3) v(j,ks-1) = vikb(j     )
+        if (nikb(j) .eq. 4) v(j,ks-1) = v   (j,ke  )
+c
+        if (nikb(j) .eq. 1) v(j,ks-2) = v   (j,ks+1)
+        if (nikb(j) .eq. 2) v(j,ks-2) = v   (j,ks  )
+        if (nikb(j) .eq. 3) v(j,ks-2) = vikb(j     )
+        if (nikb(j) .eq. 4) v(j,ks-2) = v   (j,ke-1)
+c
+        if (nikb(j) .eq. 1) v(j,ks-3) = v   (j,ks+2)
+        if (nikb(j) .eq. 2) v(j,ks-3) = v   (j,ks  )
+        if (nikb(j) .eq. 3) v(j,ks-3) = vikb(j     )
+        if (nikb(j) .eq. 4) v(j,ks-3) = v   (j,ke-2)
+50    continue
+c
+c  Outer K Boundary
+c
+      do 60 j=js,je
+        if (nokb(j) .eq. 1) v(j,ke+1) = v   (j,ke  )
+        if (nokb(j) .eq. 2) v(j,ke+1) = v   (j,ke  )
+        if (nokb(j) .eq. 3) v(j,ke+1) = vokb(j     )
+        if (nokb(j) .eq. 4) v(j,ke+1) = v   (j,ks  )
+c
+        if (nokb(j) .eq. 1) v(j,ke+2) = v   (j,ke-1)
+        if (nokb(j) .eq. 2) v(j,ke+2) = v   (j,ke  )
+        if (nokb(j) .eq. 3) v(j,ke+2) = vokb(j     )
+        if (nokb(j) .eq. 4) v(j,ke+2) = v   (j,ks+1)
+c
+        if (nokb(j) .eq. 1) v(j,ke+3) = v   (j,ke-2)
+        if (nokb(j) .eq. 2) v(j,ke+3) = v   (j,ke  )
+        if (nokb(j) .eq. 3) v(j,ke+3) = vokb(j     )
+        if (nokb(j) .eq. 4) v(j,ke+3) = v   (j,ks+2)
+60    continue
+      return
+      end
+c---------------------  z-velocity boundary values  --------------------
+c
+      subroutine bvalwy
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer k
+c
+#ifdef TAPERED
+      call taper1(w,jn,kn,js,ks-3,ke+3)
+#endif 
+c  Inner J Boundary
+c
+      do 30 k=ks,ke
+        if (nijb(k) .eq. 1) w(js-1,k) = w   (js  ,k)
+        if (nijb(k) .eq. 2) w(js-1,k) = w   (js  ,k)
+        if (nijb(k) .eq. 3) w(js-1,k) = wijb(     k)
+        if (nijb(k) .eq. 4) w(js-1,k) = w   (je  ,k)
+c
+        if (nijb(k) .eq. 1) w(js-2,k) = w   (js+1,k)
+        if (nijb(k) .eq. 2) w(js-2,k) = w   (js  ,k)
+        if (nijb(k) .eq. 3) w(js-2,k) = wijb(     k)
+        if (nijb(k) .eq. 4) w(js-2,k) = w   (je-1,k)
+c
+        if (nijb(k) .eq. 1) w(js-3,k) = w   (js+2,k)
+        if (nijb(k) .eq. 2) w(js-3,k) = w   (js  ,k)
+        if (nijb(k) .eq. 3) w(js-3,k) = wijb(     k)
+        if (nijb(k) .eq. 4) w(js-3,k) = w   (je-2,k)
+30    continue
+c
+c  Outer J Boundary
+c
+      do 40 k=ks,ke
+        if (nojb(k) .eq. 1) w(je+1,k) = w   (je  ,k)
+        if (nojb(k) .eq. 2) w(je+1,k) = w   (je  ,k)
+        if (nojb(k) .eq. 3) w(je+1,k) = wojb(     k)
+        if (nojb(k) .eq. 4) w(je+1,k) = w   (js  ,k)
+c
+        if (nojb(k) .eq. 1) w(je+2,k) = w   (je-1,k)
+        if (nojb(k) .eq. 2) w(je+2,k) = w   (je  ,k)
+        if (nojb(k) .eq. 3) w(je+2,k) = wojb(     k)
+        if (nojb(k) .eq. 4) w(je+2,k) = w   (js+1,k)
+c
+        if (nojb(k) .eq. 1) w(je+3,k) = w   (je-2,k)
+        if (nojb(k) .eq. 2) w(je+3,k) = w   (je  ,k)
+        if (nojb(k) .eq. 3) w(je+3,k) = wojb(     k)
+        if (nojb(k) .eq. 4) w(je+3,k) = w   (js+2,k)
+40    continue
+      return
+      end
+c
+      subroutine bvalwz
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "bndry.h"
+      integer j
+c
+c  Inner K Boundary
+c
+      do 50 j=js,je
+        if (nikb(j) .eq. 1) w(j,ks-1) =-w   (j,ks  )
+        if (nikb(j) .eq. 2) w(j,ks-1) = w   (j,ks  )
+        if (nikb(j) .eq. 3) w(j,ks-1) = wikb(j     )
+        if (nikb(j) .eq. 4) w(j,ks-1) = w   (j,ke  )
+c
+        if (nikb(j) .eq. 1) w(j,ks-2) =-w   (j,ks+1)
+        if (nikb(j) .eq. 2) w(j,ks-2) = w   (j,ks  )
+        if (nikb(j) .eq. 3) w(j,ks-2) = wikb(j     )
+        if (nikb(j) .eq. 4) w(j,ks-2) = w   (j,ke-1)
+c
+        if (nikb(j) .eq. 1) w(j,ks-3) =-w   (j,ks+2)
+        if (nikb(j) .eq. 2) w(j,ks-3) = w   (j,ks  )
+        if (nikb(j) .eq. 3) w(j,ks-3) = wikb(j     )
+        if (nikb(j) .eq. 4) w(j,ks-3) = w   (j,ke-2)
+50    continue
+c
+c  Outer K Boundary
+c
+      do 60 j=js,je
+        if (nokb(j) .eq. 1) w(j,ke+1) =-w   (j,ke  )
+        if (nokb(j) .eq. 2) w(j,ke+1) = w   (j,ke  )
+        if (nokb(j) .eq. 3) w(j,ke+1) = wokb(j     )
+        if (nokb(j) .eq. 4) w(j,ke+1) = w   (j,ks  )
+c
+        if (nokb(j) .eq. 1) w(j,ke+2) =-w   (j,ke-1)
+        if (nokb(j) .eq. 2) w(j,ke+2) = w   (j,ke  )
+        if (nokb(j) .eq. 3) w(j,ke+2) = wokb(j     )
+        if (nokb(j) .eq. 4) w(j,ke+2) = w   (j,ks+1)
+c
+        if (nokb(j) .eq. 1) w(j,ke+3) =-w   (j,ke-2)
+        if (nokb(j) .eq. 2) w(j,ke+3) = w   (j,ke  )
+        if (nokb(j) .eq. 3) w(j,ke+3) = wokb(j     )
+        if (nokb(j) .eq. 4) w(j,ke+3) = w   (j,ks+2)
+60    continue
+      return
+      end

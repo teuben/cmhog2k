@@ -1,0 +1,38 @@
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE self_pintp \\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine self_pintp(pot)
+#ifdef SELFGRAV
+#ifdef CARTESIAN 
+c 
+c Written by Doosu Yoon 
+c
+c-----------------------------------------------------------------------
+      implicit none
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "grav.h"
+
+      real pot(jn,kn)
+      
+      integer j, k, ix, iy
+      real    fx, fy
+
+      do 10 k=1, ke+1
+      do 10 j=1, je+1
+         ix = rth_xd(j,k)
+         iy = rth_yd(j,k)
+         fx = rth_fx(j,k)
+         fy = rth_fy(j,k)
+
+         pot(j,k) = (1.-fy) * ((1.-fx)*pin(ix  ,iy  )
+     &                            +fx *pin(ix+1,iy  ))       
+     &                 +fy  * ((1.-fx)*pin(ix  ,iy+1) 
+     &                            +fx *pin(ix+1,iy+1))
+   10 continue
+#endif
+#endif
+      return
+      end

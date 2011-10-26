@@ -1,0 +1,6 @@
+28-sep-2003   cleaned up a lot of testing the tapering code
+19-aug-2003   alternate tapering for edge using same as nuclear
+11-aug-2003   nuclear tapering (rnstart,rnscale) in the Y-Z (polar) grid
+ 8-aug-2003   internal grids (naxis1,naxis2,rmax) now work again
+ 7-aug-2003   changed i3.3 format i4.4, filenames are not character*9
+ 1-aug-2003   added pgrid::rtstart,rtscale for pot1

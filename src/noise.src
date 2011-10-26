@@ -1,0 +1,109 @@
+	subroutine RandSet(seed)
+c
+	implicit none
+	integer seed
+c
+c  This sets the seed of the random number generator. Future sequences
+c  of random numbers will be generated from this seed.
+c
+c  Input:
+c    seed	Some "random" integer value, which is the seed to be
+c		used.
+c--
+c------------------------------------------------------------------------`
+
+	real dummy
+	real rand
+	dummy = rand(seed)
+
+	end
+c************************************************************************
+c*Uniform -- Return uniformly distributed random variables.
+c&rjs
+c:random-variables,noise
+c+
+	subroutine uniform(data,n)
+c
+	implicit none
+	integer n
+	real data(n)
+c
+c  Generate uniformly distributed noise, in the range [0,1]. This works
+c  on any machine.
+c
+c  Inputs:
+c    n		Number of random numbers to produce.
+c
+c  Output:
+c    data	An array of uniformly distributed random numbers.
+c--
+c  Externals Called:
+c    ran,rand or ranf
+c		A random number generator which produces uniform variates
+c		in [0,1].
+c
+c------------------------------------------------------------------------
+	integer i
+
+	real rand
+	do i=1,n
+	  data(i) = rand(0)
+	enddo
+
+	end
+c************************************************************************
+c*Gaus -- Generate gaussianly distributed random variables.
+c&rjs
+c:random-variables,noise
+c+
+	subroutine gaus(data,n)
+c
+	implicit none
+	integer n
+	real data(n)
+c
+c  Generate gaussian noise. This works on any machine, but the Gaussian
+c  noise it produces is system dependent and not extremely accurate.
+c
+c  Gaussian noise is produced by adding 12 variates uniformly distributed
+c  in [0,1], then subtracting 6. This will have zero
+c  mean, and a variance of 1, and by the Central Limit Theorem, will
+c  approximate gaussian noise.
+c
+c  Inputs:
+c    n		Number of gaussian numbers to produce.
+c
+c  Output:
+c    data	An array of gaussian noise.
+c--
+c------------------------------------------------------------------------
+	integer MAXDIM
+	PARAMETER (MAXDIM=1024)
+	integer i,j,l,ltot
+	real buf(MAXDIM)
+c
+c  Initialise the output with a uniformly distributed variable.
+c
+	call uniform(data,n)
+c
+c  Add another 11 uniformly distributed numbers. Use a strip-mine
+c  approach in case buf is too small.
+c
+	do j=2,12
+	  do l=1,n,MAXDIM
+	    ltot = min(n-l+1,MAXDIM)
+	    call uniform(buf,ltot)
+	    do i=1,ltot
+	      data(i+l-1) = data(i+l-1) + buf(i)
+	    enddo
+	  enddo
+	enddo
+c
+c  Subtract off the mean value. The result should be roughly gaussianly
+c  distributed with 0 mean and variance of 1.
+c
+	do i=1,n
+	  data(i) = data(i) - 6
+	enddo
+c
+	end

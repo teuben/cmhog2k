@@ -1,0 +1,128 @@
+#include "cmhog.def"
+c=======================================================================
+c///////////////////////////  SUBROUTINE ZLGRG  \\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine zlgrg(d,v,w,pb,wb)
+c
+c  SOLVES THE LAGRANGEAN CONSERVATION LAWS USING FLUXES FROM R.S.
+c
+c  written by: Jim Stone
+c  date:       January, 1991
+c  modified1:
+c
+c  PURPOSE:  Updates the conservation laws in Lagrangean form using
+c    fluxes in the z-direction computed by the Riemann solver.
+c
+c  INPUT ARGUMENTS: d,e,u,v,w,pb,wb
+c
+c  OUTPUT ARGUMENTS: d,e,w
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "root.h"
+#include "grav.h"
+c-----------------------------------------------------------------------
+      real d(jn,kn),v(jn,kn),w(jn,kn)
+     &   ,wb(jn,kn),pb(jn,kn)
+      integer j,k
+      real qa,qb,qc,qd,qawt,qbwt,nu,di(kn),forcez1,forcez2
+     &	   ,vlag,wlag,gravlag
+      real grav,gravp,gravm,zcentlag(kn)
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\/////////////////////////////////
+c=======================================================================
+c
+      do 100 j=js,je
+c
+c  Compute diffusive fluxes
+c
+      if (idiff .ne. 0) then
+      di(ks-1) = 1.0/d(j,ks-1)
+      do 10 k=ks,ke+1
+	if (nyz.gt.1) then
+	  qbwt=0.25*radius(j)*(dz(k)+dz(k-1))
+     &	       /(0.5*(dy(j+1)+dy(j-1))+dy(j))
+	  qb=(radius(j-1)*(v(j-1,k)+v(j-1,k-1))
+     &	     -radius(j+1)*(v(j+1,k)+v(j+1,k-1)))/radius(j)
+	  qb=qb*qbwt
+        else
+	  qb=0.0
+        endif
+	qc=w(j,k-1)-w(j,k)
+        qd = max(0.0,(qb+qc))
+        nu =0.1*min(d(j,k),d(j,k-1))*qd
+        di(k) = 1.0/d(j,k)
+        wb (j,k) = wb(j,k)           + nu*(di(    k)-di(    k-1))
+        pb (j,k) = pb(j,k)           - nu*(w (j,k)-w (j,k-1))
+10    continue
+      endif
+c
+c  Compute new Lagrangean grid positions
+c
+      do 30 k=ks,ke+1
+        zn(j,k) = z(k) + dt*wb(j,k)/radius(j)
+30    continue
+c     inner and outer ghost zone edges assigned using periodic symmetry
+      zn(j,ks-1) = zn(j,ks  ) - (zn(j,ke+1)-zn(j,ke  ))
+      zn(j,ks-2) = zn(j,ks-1) - (zn(j,ke  )-zn(j,ke-1))
+      zn(j,ks-3) = zn(j,ks-2) - (zn(j,ke-1)-zn(j,ke-2))
+      zn(j,ke+2) = zn(j,ke+1) + (zn(j,ks+1)-zn(j,ks  ))
+      zn(j,ke+3) = zn(j,ke+2) + (zn(j,ks+2)-zn(j,ks+1))
+      zn(j,ke+4) = zn(j,ke+3) + (zn(j,ks+3)-zn(j,ks+2))
+      do 40 k=ks-3,ke+3
+        dzn(j,k) = zn(j,k+1) - zn(j,k)
+40    continue
+c
+      do 45 k=ks,ke
+	zcentlag(k)=(zn(j,k)+zn(j,k+1))/2.0
+45    continue
+c
+c  Update conservation laws
+c
+      do 50 k=ks,ke
+        qa = dt/(d(j,k)*dz(k)*radius(j))
+        w(j,k) = w(j,k) - qa*( pb(j,k+1)- pb(j,k))
+	grav=barfract*barzcen(j,k)+spifract*spzcen(j,k)
+
+#ifdef SELFGRAV
+     &       +selfgzcen(j,k)
+#endif
+
+	forcez1=grav-(w(j,k)*v(j,k)/radius(j))
+c       interpolate vlag,wlag,and gravlag
+	gravp=barfract*barzcen(j,k+1)+spifract*spzcen(j,k+1)
+
+#ifdef SELFGRAV
+     &       +selfgzcen(j,k+1)
+#endif
+
+	gravm=barfract*barzcen(j,k-1)+spifract*spzcen(j,k-1)
+
+#ifdef SELFGRAV
+     &       +selfgzcen(j,k-1)
+#endif
+
+	if (zcentlag(k).gt.zcenteul(k)) then
+	  vlag=v(j,k)+((v(j,k+1)-v(j,k))*
+     &         (zcentlag(k)-zcenteul(k))/(zcenteul(k+1)-zcenteul(k)))
+	  wlag=w(j,k)+((w(j,k+1)-w(j,k))*
+     &         (zcentlag(k)-zcenteul(k))/(zcenteul(k+1)-zcenteul(k)))
+	  gravlag=grav+((gravp-grav)*
+     &         (zcentlag(k)-zcenteul(k))/(zcenteul(k+1)-zcenteul(k)))
+	else
+	  vlag=v(j,k)+((v(j,k)-v(j,k-1))*
+     &	       (zcentlag(k)-zcenteul(k))/(zcenteul(k)-zcenteul(k-1)))
+	  wlag=w(j,k)+((w(j,k)-w(j,k-1))*
+     &	       (zcentlag(k)-zcenteul(k))/(zcenteul(k)-zcenteul(k-1)))
+	  gravlag=grav+((grav-gravm)*
+     &	       (zcentlag(k)-zcenteul(k))/(zcenteul(k)-zcenteul(k-1)))
+        endif
+	forcez2=gravlag-(wlag*vlag/radius(j))
+	w(j,k)=w(j,k)+0.5*dt*(forcez1+forcez2)
+        d(j,k) = d(j,k)*dz(k)/dzn(j,k)
+50    continue
+c
+100   continue
+      return
+      end

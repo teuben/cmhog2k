@@ -1,0 +1,259 @@
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE GPOTSOLv  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine gpot(den,phi_cal)
+#ifdef SELFGRAV
+c 
+c Written by Rahul Shetty
+c
+c 
+c PURPOSE: This file calculates the self-gravitational potential by
+c solving the Possson equation using 3D FFT method, for RPZ geometry.
+c The method to obtain the potential is described by equations 6 
+c            and 9 in Miller (1976),
+c
+c For FFT, the FFTW, version 3.0.1, is implemented.
+c
+c 4/25/04 RPZ potential implementation runs smoothly
+c             TODO: Normalization for Cartesain case 
+c
+c
+c LOCALs: 
+c   den(i,j) : 2D density field
+c   phi_cal(i,j) : calculated gravitational potential
+c-----------------------------------------------------------------------
+c      implicit NONE
+#include "param.h"
+#include "fftw3.h"
+#include "grid.h"
+#include "field.h"
+#include "root.h"
+#include "grav.h"
+c
+      real den(jn,kn), phi_cal(jn,kn)
+      integer j,k,k1
+c      real tmp1,tmp2
+
+#ifdef MILLERPOT
+      integer j2
+      complex*8 FTmass
+      dimension FTmass(N1,hN2+1)
+
+      integer jtemp,ktemp
+#endif
+#ifdef COORDTRANS 
+      real k_sp
+#endif
+
+#ifdef SELFG_TURNON
+      real timesg, tscalesg, sgfact
+      common /selfon/ timesg,tscalesg
+#endif
+
+c doosu cpu time estimate
+      real etime
+      real elapseds(2)
+      real ts_start, ts_end
+      real time_self
+      common /selftime/ time_self
+c doosu end
+c-----------------------------------------------------------------------
+      ts_start=etime(elapseds) 
+#ifdef EXTGRAV
+      if ( time .lt. tsgst ) then
+         return
+      endif
+#endif
+
+#ifdef SELFG_TURNON
+      if (time .lt. timesg) then
+         sgfact = 0.
+       else
+         sgfact = (time - timesg) / tscalesg
+      endif
+      sgfact = min(1.0,sgfact)
+      sgfact = 1.
+#endif
+
+#ifdef MILLERPOT
+c doosu 
+c      do i=1,N1
+c         print*, den(i+is-1,100,1)
+c      enddo
+c      stop
+c doosu end
+c            
+      do j = 1, N1
+         jtemp = j+js-1
+         do k = 1, N2
+            ktemp = k+ks-1
+            massn(k) = den(jtemp,ktemp)*
+     &                      radius(jtemp)*dy(jtemp)*dz(ktemp)
+         enddo
+c        forward FFT of density
+         call sfftw_execute(planf)
+         do k = 1, hN2 + 1
+            FTmass(j,k) = FTmassn(k)
+         enddo
+      enddo
+
+      do j = 1, N1
+         jtemp = j+js-1
+         do k = 0,hN2
+            FTV(k+1) = cmplx(0.,0.)
+            do 10 j2 = 1,N1
+c doosu
+c              if(i .eq. i2 .and. j.eq.0) go to 10
+c              if(j .eq. j2) go to 10
+c      Convolution of Green's Function and Mass
+              FTV(k+1) = FTV(k+1) + 
+     &              FTDpot(j2,k*NCOPY+1,j)!*FTmass(j2,k+1)
+ 10         continue
+         enddo
+         call sfftw_execute(plani)            
+         do k=1,N2
+            phi_cal(jtemp,k+ks-1) = VV(k)
+         enddo
+
+c         do 20  k=1,   N2
+c         do 20 k1=k+1, N2
+c            tmp1 = -den(j,k)*dy(j+js-1)*dz(k+ks-1)/DDD(k1-k)
+c            tmp2 = -den(j,k1)*dy(j+js-1)*dz(k1+ks-1)/DDD(k1-k)
+c            phi_cal(j+js-1,k+ks-1) = phi_cal(j+js-1,k+ks-1) + tmp2
+c            phi_cal(j+js-1,k1+ks-1)= phi_cal(j+js-1,k1+ks-1) + tmp1
+c20       continue
+c doosu end
+
+      enddo
+#endif /* MILLERPOT */
+#ifdef COORDTRANS
+
+      do k = 1, N2
+         do j = 1, NCOPY*N1
+            mass(j,k) = 0.
+         enddo
+      enddo
+
+         do k = 1, N2
+            do j = (NCOPY-1)*hN1+1,NCOPY*hN1+hN1
+               mass(j,k) = den(j+js-((NCOPY-1)*hN1+1),k+ks-1)
+     1                 *(radius(j+js-((NCOPY-1)*hN1+1))/Ro_self)**2
+            enddo
+         enddo
+
+c forward FFT of density
+      call sfftw_execute(planfnm)
+
+      do k = 1,N2
+         do j = 1,NCOPY*hN1+1
+            k_sp=amp_k(j,k)
+            out(j,k) = -coeff*out(j,k)/(k_sp* (1.0 + (k_sp*H0)))
+       enddo
+      enddo
+      out(1,1) = cmplx(0.,0.)
+
+c inverse FFT
+      call sfftw_execute(planinm)
+
+         do k = 1, N2
+            do j = (NCOPY-1)*hN1+1,NCOPY*hN1+hN1
+               phi_cal(j+js-((NCOPY-1)*hN1+1),k+ks-1) = mass(j,k)
+            enddo
+         enddo
+
+#endif
+      do 100 k = ks, ke
+c        phi_cal(js-1,k) = phi_cal(je  ,k)
+c        phi_cal(js-2,k) = phi_cal(je-1,k)
+c        phi_cal(js-3,k) = phi_cal(je-2,k)
+c        phi_cal(je+1,k) = phi_cal(js,  k)
+c        phi_cal(je+2,k) = phi_cal(js+1,k)
+c        phi_cal(je+3,k) = phi_cal(js+2,k)
+
+         do 110 j = js-3,js-1
+            phi_cal(j,k) = phi_cal(js,k) 
+     &                     +((phi_cal(js,k)-phi_cal(js+1,k))
+     &                     *(radius(js)-radius(j))
+     &                     /(radius(js+1)-radius(js)))
+110      enddo
+         do 120 j=je+1,je+3
+            phi_cal(j,k) = phi_cal(je,k)
+     &                     +((phi_cal(je,k)-phi_cal(je-1,k))
+     &                     *(radius(je)-radius(j))
+     &                     /(radius(je-1)-radius(je)))
+120      enddo
+100   continue
+
+      do 200 j=js-3,je+3
+        phi_cal(j,ks-1) = phi_cal(j,ke  )
+        phi_cal(j,ks-2) = phi_cal(j,ke-1)
+        phi_cal(j,ks-3) = phi_cal(j,ke-2)
+        phi_cal(j,ke+1) = phi_cal(j,ks  )
+        phi_cal(j,ke+2) = phi_cal(j,ks+1)
+        phi_cal(j,ke+3) = phi_cal(j,ks+2)
+200   continue
+
+c
+c to turn on self gravity slowly
+c
+#ifdef SELFG_TURNON
+      do 250 k=1,kn
+         do 250 j=1,jn
+            phi_cal(j,k) = phi_cal(j,k)*sgfact
+250   continue
+#endif
+
+#ifdef EXTGRAV
+      if(time .lt. tsgfl) then
+         do 300 k=1,kn
+            do 300 j=1,jn
+               phi_cal(j,k) = phi_cal(j,k)*
+     1                    exp(-((time-tsgfl)**2)/(time-0.3*tsgst)**2)
+c               phi_cal(j,k) = phi_cal(j,k) *
+c     1                      ( (exp((time-tsgst)/(tsgfl-tsgst))-1.0) /
+c     &                       (exp(1.0) - 1.0 ))              
+300      continue
+      endif
+#endif
+c      print*,'testtestest'
+#endif  /* SELFGRAV*/
+      
+      ts_end = etime(elapseds)
+      time_self = ts_end- ts_start
+      
+      return
+      end
+
+c=======================================================================
+c////////////////////////  SUBROUTINE FFTPLNCT  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine fftplnct_rpz
+#ifdef SELFGRAV
+c 
+c PURPOSE: create plans for the fftw in cylindrical coords
+c Notes: 
+c
+c LOCALs: 
+c-----------------------------------------------------------------------
+      implicit NONE
+#include "param.h"
+#include "grid.h"
+#include "fftw3.h"
+#include "grav.h"
+c
+#ifdef MILLERPOT
+      call sfftw_plan_dft_r2c_1d(planf,N2,massn,FTmassn,FFTW_MEASURE)
+      call sfftw_plan_dft_c2r_1d(plani,N2,FTV,VV,FFTW_MEASURE)
+#endif
+#ifdef COORDTRANS 
+      call sfftw_plan_dft_r2c_2d(planfnm,NCOPY*N1,N2,
+     1                             mass,out,FFTW_MEASURE)
+      call sfftw_plan_dft_c2r_2d(planinm,NCOPY*N1,N2,
+     1                             out,mass,FFTW_MEASURE)
+#endif
+#endif
+      return
+      end
+c=======================================================================
+

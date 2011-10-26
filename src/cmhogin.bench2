@@ -1,0 +1,14 @@
+ $rescon $
+ $hycon idiff=1,ifltn=1,tlim=0.1 $
+ $ggen2 nbl=67,ymin=0.1,ymax=16.0,yrat=1.07854,igrid=1,lgrid=.true. $
+ $ggen3 nbl=40,zmin=-1.570796,zmax=1.570796,igrid=1,lgrid=.true. $
+ $ijb $
+ $ojb $
+ $ikb $
+ $okb $
+ $eos ciso=5.0 $
+ $pgen amp=10.0,amode=1.0,n=1.0,aob=2.5,rl=3.0,qm=4.5e4,rhoc=2.4e4,bartime=0.1 $
+ $spiral spamp=0.0,spang=-0.5236,spsc=1.0,sppat=32.74,sr=4.0,pc=2.328 $
+ $pgrid pot0='grid0.fits',pot1='grid1.fits',omega=40,vhalo=150,rhalo=1.5,gamma=1.0 $
+ $iocon dthdf=0.1,dtmovie=0.0,dthist=0.02 $
+ $mlims cma1=3.0,cmi1=-2.0,cma2=200.0,cmi2=-200.0,cma3=200.0,cmi3=-200.0 $

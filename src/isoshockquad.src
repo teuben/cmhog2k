@@ -1,0 +1,43 @@
+#include "cmhog.def"
+c=======================================================================
+c///////////////////////  SUBROUTINE ISOSHOCK  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine isoshockquad(j1,j2,k1,k2,dl,dr,ul,ur,ps,us)
+c
+c  RIEMANN SOLVER FOR ISOTHERMAL SHOCKS
+c
+c  written by: Jim Stone
+c  date:       July, 1993
+c  modified1:
+c
+c  LOCALS
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "root.h"
+#include "scratch.h"
+c-----------------------------------------------------------------------
+      integer j1,j2,k1,k2
+      real  dl(jn,kn), ul(jn,kn), ps(jn,kn)
+     &     ,dr(jn,kn), ur(jn,kn), us(jn,kn)
+c-----------------------------------------------------------------------
+      integer j,k
+      real qa,qb,qc,rs
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\//////////////////////////////////
+c=======================================================================
+c
+      do 300 k=k1,k2
+      do 300 j=j1,j2
+c
+c     compute quadratic equation parameters
+	qa=ciso*(1./sqrt(dr(j,k))+1./sqrt(dl(j,k)))
+	qb=ur(j,k)-ul(j,k)
+	qc=-ciso*(sqrt(dr(j,k))+sqrt(dl(j,k)))
+        rs = ((-qb+sqrt(qb**2-4.*qa*qc))/(2.*qa))**2
+        ps(j,k) = ciso**2*rs
+        us(j,k) = ur(j,k)+ciso*(rs-dr(j,k))
+     &		    /sqrt(rs*dr(j,k))
+c
+300   continue
+      return
+      end
+

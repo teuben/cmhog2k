@@ -1,0 +1,61 @@
+#include "cmhog.def"
+c=======================================================================
+c///////////////////  SUBROUTINE GPOT Interporation  \\\\\\\\\\\\\\\\\\\
+c
+      subroutine gpotint(phicen,phiy,phiz)
+#ifdef SELFGRAV
+c
+c Written by Doosu Yoon
+c
+c
+c PURPOSE: 
+c
+c 7/12/07 
+c             TODO: 
+c
+c  INPUT  : phicen(jn,kn) gravitational potential at center grid
+c
+c  OUTPUT : phiyed (jn,kn)  gravitational potential at r edge grid
+c           phized (jn,kn)  gravitational potential at theta edge grid
+c
+c  LOCALs:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+      
+      real phicen(jn,kn)
+      real phiy(jn,kn), phiz(jn,kn)
+      integer j,k
+  
+      do 10 k = ks,ke
+         do 10 j = js,je
+            phiy(j,k) = phicen(j,k) + (phicen(j,k) - phicen(j-1,k)) 
+     &                *(y(j)-radius(j))/(radius(j)-radius(j-1))
+            phiz(j,k) = phicen(j,k) + (phicen(j,k) - phicen(j,k-1)) 
+     &                *(z(k)-zcenteul(k))/(zcenteul(k)-zcenteul(k-1))
+10    continue
+
+c boundary for potentials at edge
+      do 100 k = ks, ke
+         do 110 j = js-3,js-1
+            phiy(j,k) = phiy(js,k)+((phiy(js,k)-phiy(js+1,k))
+     &                  *(y(js)-y(j))/(y(js+1)-y(js)))
+110      enddo
+         do 120 j=je+1,je+3
+            phiy(j,k) = phiy(je,k)+((phiy(je,k)-phiy(je-1,k))
+     &                  *(y(je)-y(j))/(y(je-1)-y(je)))
+120      enddo
+100   continue
+
+      do 200 j=js,je
+         phiz(j,ks-1) = phiz(j,ke  )
+         phiz(j,ks-2) = phiz(j,ke-1)
+         phiz(j,ks-3) = phiz(j,ke-2)
+         phiz(j,ke+1) = phiz(j,ks  )
+         phiz(j,ke+2) = phiz(j,ks+1)
+         phiz(j,ke+3) = phiz(j,ks+2)
+200   continue
+
+#endif /* SELFGRAV */
+      return
+      end

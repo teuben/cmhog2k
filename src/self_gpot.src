@@ -1,0 +1,138 @@
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE GPOTSOLv  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine self_gpot(height,den,pot)
+#ifdef SELFGRAV
+#ifdef CARTESIAN 
+c 
+c Written by Doosu Yoon 
+c
+c-----------------------------------------------------------------------
+c      implicit none
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "fftw3.h"
+#include "grav.h"
+
+      real*8 pi
+      PARAMETER (pi = 3.141592654)
+
+      integer j,k
+      real height, tmp
+      real den(Nxx,Nyy), pot(Nxx,Nyy)
+       
+      real qa1, qa2, gconst
+      real amp_k2(Nxx,Nyy), amp_k
+      common /gravnor/ qa1, qa2, gconst
+      common /gravker/ amp_k2
+#ifndef NO_IFORT
+      dimension amp_k(Nxx/2+1,Nyy)
+#endif
+
+#ifdef NO_IFORT
+      do 10 k=1,Nyy
+         do 10 j=1,Nxx
+            indata(j,k) = den(j,k)
+   10 continue 
+#endif
+#ifndef NO_IFORT
+      indata(:,:) = den(:,:)
+#endif     
+
+c 
+c forward FFT of density
+c 
+      call sfftw_execute(p_fwd)
+
+c
+c correction for gravitational kernel & normalization
+c
+      tmp = 2.*pi*height
+#ifdef NO_IFORT
+      do 20 k=1,Nyy
+         do 20 j=1,Nxx/2+1
+            amp_k = sqrt(amp_k2(j,k))
+            out(j,k) = - out(j,k) / (qa2*amp_k) / (1+tmp*amp_k)
+   20 continue
+#endif
+#ifndef NO_IFORT
+      amp_k(:,:) = sqrt(amp_k2(1:Nxx/2+1,:))
+      out(:,:) = - out(:,:) / (qa2*amp_k(:,:)) / (1.+tmp*amp_k(:,:))
+#endif
+      out(1,1) = cmplx(0.,0.)
+
+c
+c inverse FFT of potential
+c
+      call sfftw_execute(p_rvs)
+
+#ifdef NO_IFORT
+      do 30 k=1,Nyy
+         do 30 j=1,Nxx
+c            print*,j,k, den(j,k), indata(j,k), den(j,k)-indata(j,k)
+            pot(j,k) = indata(j,k)
+   30 continue
+#endif 
+#ifndef NO_IFORT
+      pot(:,:) = indata(:,:)
+#endif
+
+#endif      /* CARTESIAN */
+#endif      /* SELFGRAV */
+      return
+      end
+
+c=======================================================================
+c////////////////////////  SUBROUTINE FFTPLNCT  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine fftplnct
+#ifdef SELFGRAV 
+#ifdef CARTESIAN
+c 
+c PURPOSE: create plans for the fftw 
+c Notes: 
+c
+c LOCALs: 
+c-----------------------------------------------------------------------
+      implicit NONE
+#include "param.h"
+#include "fftw3.h"
+#include "grav.h"
+c
+      call sfftw_plan_dft_r2c_2d(p_fwd,Nxx,Nyy,
+     1                           indata,out,FFTW_MEASURE)
+      call sfftw_plan_dft_c2r_2d(p_rvs,Nxx,Nyy,
+     1                           out,indata,FFTW_MEASURE)
+#endif
+#endif
+      return
+      end
+
+c=======================================================================
+c////////////////////////  SUBROUTINE FFTPLNds  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine fftplnds 
+#ifdef SELFGRAV 
+#ifdef CARTESIAN
+c 
+c PURPOSE: destroy plans for the fftw 
+c Notes: 
+c
+c LOCALs: 
+c-----------------------------------------------------------------------
+      implicit NONE
+#include "param.h"
+#include "fftw3.h"
+#include "grav.h"
+c
+      call sfftw_destroy_plan(p_fwd)
+      call sfftw_destroy_plan(p_rvs)
+#endif
+#endif
+      return
+      end
+c=======================================================================
+
+

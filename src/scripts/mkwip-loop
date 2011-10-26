@@ -1,0 +1,10 @@
+#! /bin/csh -f
+#
+#
+set n=0
+foreach j (1 2 3 4 5)
+  foreach  i (1 2 3 4 5 6)
+    @ n++
+    echo p1 $j $i $n
+  end
+end

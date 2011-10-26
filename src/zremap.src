@@ -1,0 +1,47 @@
+#include "cmhog.def"
+c=======================================================================
+c///////////////////////////  SUBROUTINE ZREMAP  \\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine zremap(d,v,w,df,vf,wf)
+c
+c  PERFORMS REMAP IN Z-DIRECTION
+c
+c  written by: Jim Stone
+c  date:       January, 1991
+c
+c  PURPOSE:  Remaps the fundamental variables d,e,u,v,w back to the
+c    Eulerian mesh after Lagrangean update.  Fluxes for each variable
+c    computed in XINTRMP are used.
+c
+c  INPUT ARGUMENTS: d=density; e=total energy; u,v,w=x,y,z components of
+c    velocity.  All are zone centered (defined over nxz,nyz,nzz).
+c    df=density flux; ef=total energy flux; uf,vf,wf=x,y,z-components of
+c    velocity fluxes.  These are all centered at interfaces in
+c    z-direction (defined over nxz,nyz,nzz+1).
+c
+c  OUTPUT ARGUMENTS: Updated values for d,e,u,v,w.
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+c-----------------------------------------------------------------------
+      real d(jn,kn),v(jn,kn),w(jn,kn)
+      real df(jn,kn),vf(jn,kn)
+     &    ,wf(jn,kn),dm,dmnu
+c
+      integer j,k
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////
+c=======================================================================
+c
+      do 10 k=ks,ke
+      do 10 j=js,je
+        dm = d(j,k)*dzn(j,k)*radius(j)
+        dmnu = dm - (df(j,k+1)-df(j,k))
+        d(j,k) = dmnu/(dz(k)*radius(j))
+        v(j,k) = (dm*v(j,k) - (vf(j,k+1)-vf(j,k)))/dmnu
+        w(j,k) = (dm*w(j,k) - (wf(j,k+1)-wf(j,k)))/dmnu
+10    continue
+c
+      return
+      end
