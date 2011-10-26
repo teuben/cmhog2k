@@ -1,0 +1,82 @@
+c -*- fortran -*-
+#include "cmhog.def"
+c=======================================================================
+c/////////////////////////  SUBROUTINE NUDT  \\\\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine nudt
+c
+c  COMPUTES TIME STEP FOR NEXT CYCLE
+c
+c     written by: Jim Stone
+c     date:       January, 1991
+c     modified1:
+c
+c  PURPOSE:  Computes the new timestep using the Courant condition.
+c
+c  EXTERNALS: PGAS
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "root.h"
+#include "scratch.h"
+#include "grav.h"
+      integer j,k
+      real dtnew,grav,forcey,forcez,timey,timez,veff,weff
+c
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\///////////////////////////////////
+c=======================================================================
+c
+      dtnew=huge
+c
+      do 300 k=ks,ke
+      do 300 j=js,je
+	if (nyz.gt.1) then
+	  veff=ciso+abs(v(j,k)-vgy)
+	  grav=(1-barfract)*diskycen(j,k)+barfract*barycen(j,k)
+     &         +spifract*spycen(j,k)
+#ifdef SELFGRAV
+     &         +selfgycen(j,k)
+#endif
+	  forcey=grav+(w(j,k)**2/radius(j))
+          if (abs(2*forcey*dy(j)).gt.(0.1*veff**2)) then
+            timey=(sqrt(abs(2*forcey*dy(j))+veff**2)-veff)/abs(forcey)
+          else
+            timey=dy(j)/veff
+          endif
+          dtnew=min(dtnew,timey)
+        endif
+	if (nzz.gt.1) then
+	  weff=ciso+abs(w(j,k)-vgz*radius(j))
+	  grav=barfract*barzcen(j,k)+spifract*spzcen(j,k)
+#ifdef SELFGRAV
+     &        +selfgzcen(j,k)
+#endif
+	  forcez=grav-(w(j,k)*v(j,k)/radius(j))
+          if (abs(2*forcez*dz(k)*radius(j)).gt.(0.1*weff**2)) then
+            timez=(sqrt(abs(2*forcez*dz(k)*radius(j))+weff**2)-weff)
+     &   	  /abs(forcez)
+          else
+            timez=dz(k)*radius(j)/weff
+          endif
+          dtnew=min(dtnew,timez)
+          endif
+300     continue
+c
+      dt   = min(co*dtnew,1.25*dt)
+c      print*,nhy,time,dt
+      if (dt .lt. dtmin) then
+        write(6,"('WARNING from NUDT: dt < dtmin',/1x,'dt= ',1pe12.5)") dt
+        write(6,"('dtmin= ',1e12.5)") dtmin
+	write(6,"('timey= ',1e12.5)") timey
+	write(6,"('timez= ',1e12.5)") timez
+        nwarn=nwarn+1
+c             temporary hack to stop
+c        STOP
+      endif
+      if ((time+dt) .gt. tlim) dt = tlim-time
+c
+      return
+      end

@@ -1,0 +1,128 @@
+#include "cmhog.def"
+c=======================================================================
+c///////////////////////////  SUBROUTINE YLGRG  \\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine ylgrg(d,v,w,pb,vb)
+c
+c  SOLVES THE LAGRANGEAN CONSERVATION LAWS USING FLUXES FROM R.S.
+c
+c  written by: Jim Stone
+c  date:       January, 1991
+c  modified1:
+c
+c  PURPOSE:  Updates the conservation laws in Lagrangean form using
+c    fluxes in the y-direction computed by the Riemann solver.
+c
+c  INPUT ARGUMENTS: d,e,u,v,w,pb,vb
+c
+c  OUTPUT ARGUMENTS: d,e,v
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "root.h"
+#include "grav.h"
+c-----------------------------------------------------------------------
+      real d(jn,kn),v(jn,kn),w(jn,kn)
+     &   ,vb(jn,kn),pb(jn,kn)
+      integer j,k
+      real qa,qb,qc,qd,qawt,qcwt,nu,di(jn),ycentlag(jn),
+     &     forcey1,forcey2,gravlag,wlag,grav,gravp,gravm
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\/////////////////////////////////
+c=======================================================================
+c
+      do 100 k=ks,ke
+c
+c  Compute diffusive fluxes
+c
+      if (idiff .ne. 0) then
+      di(js-1) = 1.0/d(js-1,k)
+      do 10 j=js,je+1
+        qb=(radius(j-1)*v(j-1,k)-radius(j)*v(j,k))/y(j)
+        if (nzz.gt.1) then
+	  qcwt=0.25*(dy(j)+dy(j-1))/(y(j)*(0.5*(dz(k+1)+dz(k-1))+dz(k)))
+          qc=(w(j,k-1)+w(j-1,k-1))-(w(j,k+1)+w(j-1,k+1))
+	  qc=qc*qcwt
+        else
+          qc=0.0
+        endif                 
+        qd = max(0.0,(qb+qc))
+        nu =0.1*min(d(j,k),d(j-1,k))*qd
+        di(j) = 1.0/d(j,k)
+        vb (j,k) = vb(j,k)           + nu*(di(  j  ) -di(  j-1  ))
+        pb (j,k) = pb(j,k)           - nu*(v (j,k) -v (j-1,k))
+10    continue
+      endif
+c
+c  Compute new lagrangean grid positions
+c
+      do 30 j=js,je+1
+        yn(j,k) = y(j) + dt*vb(j,k)
+30    continue
+c     inner ghost zone EDGES assigned by reflection
+      yn(js-1,k) = yn(js  ,k) - (yn(js+1,k)-yn(js  ,k))
+      yn(js-2,k) = yn(js-1,k) - (yn(js+2,k)-yn(js+1,k))
+      yn(js-3,k) = yn(js-2,k) - (yn(js+3,k)-yn(js+2,k))
+c     outer ghost zone EDGES assigned by outflow
+      yn(je+2,k) = yn(je+1,k) + (yn(je+1,k)-yn(je  ,k))
+      yn(je+3,k) = yn(je+2,k) + (yn(je+1,k)-yn(je  ,k))
+      yn(je+4,k) = yn(je+3,k) + (yn(je+1,k)-yn(je  ,k))
+      do 40 j=js-3,je+3
+        dyn(j,k) = yn(j+1,k) - yn(j,k)
+        rvollag(j,k)=abs(0.5*((yn(j+1,k)**2)-(yn(j,k)**2)))
+40    continue
+c
+      do 45 j=js,je
+	ycentlag(j)=(2.0*(yn(j+1,k)**3-yn(j,k)**3))
+     &		    /(3.0*(yn(j+1,k)**2-yn(j,k)**2))
+45    continue
+c
+c  Update conservation laws
+c
+      do 50 j=js,je
+        qa = dt/(d(j,k)*rvoleul(j))
+	qb = (y(j)+y(j+1)+yn(j,k)+yn(j+1,k))/4.0
+        v(j,k) = v(j,k) - qa*qb*( pb(j+1,k)- pb(j,k))
+	grav=(1-barfract)*diskycen(j,k)+barfract*barycen(j,k)
+     &       +spifract*spycen(j,k)
+
+#ifdef SELFGRAV
+     &       +selfgycen(j,k)
+#endif
+
+	forcey1=grav+(w(j,k)**2/radius(j))
+c       interpolate gravity & w in center of lagrangian zone
+        gravp=(1-barfract)*diskycen(j+1,k)+barfract*barycen(j+1,k)
+     &        +spifract*spycen(j+1,k)
+
+#ifdef SELFGRAV
+     &        +selfgycen(j+1,k)
+#endif
+
+	gravm=(1-barfract)*diskycen(j-1,k)+barfract*barycen(j-1,k)
+     &        +spifract*spycen(j-1,k)
+
+#ifdef SELFGRAV
+     &        +selfgycen(j-1,k)
+#endif
+
+        if (ycentlag(j).gt.radius(j)) then
+          wlag=w(j,k)+((w(j+1,k)-w(j,k))*
+     &        (ycentlag(j)-radius(j))/(radius(j+1)-radius(j)))
+          gravlag=grav+((gravp-grav)*
+     &        (ycentlag(j)-radius(j))/(radius(j+1)-radius(j)))
+	else
+	  wlag=w(j,k)+((w(j,k)-w(j-1,k))*
+     &        (ycentlag(j)-radius(j))/(radius(j)-radius(j-1)))
+	  gravlag=grav+((grav-gravm)*
+     &        (ycentlag(j)-radius(j))/(radius(j)-radius(j-1)))
+	endif
+	forcey2=gravlag+(wlag**2/ycentlag(j))
+	v(j,k)=v(j,k)+(0.5*dt*(forcey1+forcey2))
+        d(j,k)=d(j,k)*rvoleul(j)/rvollag(j,k)
+50    continue
+c
+100   continue
+      return
+      end
