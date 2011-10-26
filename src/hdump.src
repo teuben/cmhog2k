@@ -1,0 +1,87 @@
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE hdump  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine hdump
+c
+c  FORMATTED WRITE OF SELECTED VARIABLES
+c
+c     written by: Jim Stone
+c     date:       February,1993
+c     modified1: 
+c
+c  PURPOSE:  Dumps scalar "history" variables in a formatted write
+c  for analysis.  Currently implemented variables are:
+c   scal( 1) = time
+c   scal( 2) = dt
+c   scal( 3) = mass
+c   scal( 4) = 0.5*d*v**2
+c   scal( 5) = 0.5*d*w**2
+c  More variables can be added by increasing nscal, adding the
+c  appropriate lines to the do 10 loop, and changing the 2001 format
+c  statement
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "root.h"
+      integer j,k,nscal,irl
+      parameter(nscal=11)
+      real scal(nscal),dvol,darea,qa,massrl,grav
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\///////////////////////////////
+c=======================================================================
+c
+      qa =(z(ke+1)-z(ks)) * 0.5*(y(je+1)**2-y(js)**2)
+      do 1 i=1,nscal
+        scal(i) = 0.0
+1     continue
+      massrl=0.0
+      scal(1) = time
+      scal(2) = dt
+c
+c  Integrate quantities
+c
+      do 10 k=ks,ke
+      do 10 j=js,je
+        dvol = (dz(k)*0.5*(y(j+1)**2-y(j)**2))/qa
+        scal(3) = scal(3) + dvol*d(j,k)
+        scal(4) = scal(4) + dvol*d(j,k)*0.5*v(j,k)**2
+        scal(5) = scal(5) + dvol*d(j,k)*0.5*w(j,k)**2
+        grav=(1-barfract)*diskycen(j,k)
+     &       +barfract*barycen(j,k) + spifract*spycen(j,k)
+        scal(6) = scal(6) + dvol*d(j,k)*v(j,k)*
+     &            (w(j,k)-sqrt(abs(radius(j)*grav)))
+10    continue
+      do 11 j=js,je
+        if (y(j+1).gt.rl) then
+          irl=j-1
+          goto 12
+        endif
+11    continue
+12    qa = (z(ke+1)-z(ks))*0.5*(y(irl+1)**2-y(js)**2)
+      do 13 k=ks,ke
+      do 13 j=js,irl
+        dvol = (dz(k)*0.5*(y(j+1)**2-y(j)**2))/qa
+        massrl=massrl+dvol*d(j,k)
+      scal(7)=scal(7)+dvol*d(j,k)*v(j,k)
+13    continue
+      scal(7)=scal(7)/massrl
+c    
+      qa = (z(ke+1)-z(ks))
+      do 15 k=ks,ke
+	darea = dz(k)/qa
+      scal(8) = scal(8) + darea*massflux(k)
+      scal(9) = scal(9) + darea*omassflux(k)
+15    continue
+c
+c  Write out variables to file connected to unit 3 opened in MAIN
+c  program unit (zeus2d.src)
+c
+      write(3,2001) (scal(i),i=1,nscal)
+2001  format(1x,1pe12.5,10e14.5)
+c
+      return
+      end
+
