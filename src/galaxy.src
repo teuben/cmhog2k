@@ -1,0 +1,1130 @@
+c -*- fortran -*-
+#include "cmhog.def"
+c=======================================================================
+c////////////////////////  SUBROUTINE GALAXY  \\\\\\\\\\\\\\\\\\\\\\\\\\
+c  defines the potential from either an analytical subroutine
+c  (it should define inipotential() and potential() as defined
+c   by NEMO), or via up to two grid (FITS) files defining the
+c   axisymmetric and  non-axisymmetric parts of the potential
+c   on an X-Y grid.
+c
+c
+c
+      subroutine galaxy
+c
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "root.h"
+#include "field.h"
+#include "grav.h"
+#include "pseudop.h"
+#include "fftw3.h"
+c#include "fftw_f77.i"
+c-----------------------------------------------------------------------
+      integer i,j,k,ndim,npar
+      real arg
+      character name*5, pot0*80, pot1*80, errtxt*40,comment*80
+      real crval1,crval2,crpix1,crpix2,cdelt1,cdelt2
+      real*8 amp,amode,n,aob,qm,rhoc,gheight,
+     &                r_th,gam,bhmass
+      real*8 dlimit,rcloud,starff
+      integer istar
+      real*8 par(11),pos(3),acc(3),pot,dumtime
+      integer flun,bsize,status,rwmode,naxes(2)
+      logical anyf
+c doosu thick
+c      real gheight
+
+      real*8 pi
+      PARAMETER (pi = 3.141592654)
+
+      INTEGER nx,ny
+      REAL gpot0,gpot1,gcrpix1,gcrpix2,gcdelt1,gcdelt2,gcrval1,gcrval2
+      REAL gomega,grtstart,grtscale
+      COMMON/ggrid/nx,ny,gpot0(PGMAX,PGMAX),gpot1(PGMAX,PGMAX),
+     *          grmax,gomega,
+     * 		gcrpix1,gcrpix2,gcdelt1,gcdelt2,gcrval1,gcrval2,
+     *          grhalo,gvhalo,ggamma,grtstart,grtscale
+
+      external inipotential,potential
+#ifdef ROBERTSMODEL
+      real*8 PHI_ro
+      external PHI_ro
+#endif
+c doosu spiral r position
+      integer sr_ind
+c doosu end
+
+#ifdef INITCHECK
+      real*8 pot_out(jn,kn),diskf(jn,kn),bulf(jn,kn),barf(jn,kn)
+      REAL*8 FXBUL,FYBUL,FXDISK,FYDISK
+      COMMON /CHECKINIT/ FXBUL,FYBUL,FXDISK,FYDISK
+      REAL*8 FXBAR,FYBAR
+      COMMON /CHECKINIT2/ FXBAR,FYBAR
+#endif
+#ifdef YUANMODEL
+      real*8 v0_yu, pot0_yu, a_yu,pattern_yu
+#endif
+#ifdef ROBERTSMODEL
+      real*8 Aconst_ro,a_ro,B2_ro,w0_ro,N_ro,i0_ro,pattern_ro 
+      integer spiralOX
+      COMMON /roberts/ N_ro,i0_ro,w0_ro 
+#endif
+      integer idum,idum2
+#ifdef SELFGRAV
+      real soft,Q,gconst
+      real phiyed(jn,kn),phized(jn,kn)
+#ifdef SELFG_TURNON
+      real timesg,tscalesg
+      common /selfon/ timesg,tscalesg
+#endif
+#ifdef MILLERPOT
+      integer j2
+      real angdiff(NCOPY*N2),Dpot(N1,N1,NCOPY*N2)
+      complex*8 FTDn
+      real Dn
+      dimension Dn(NCOPY*N2), FTDn(NCOPY*N2/2+1)
+      real rA,rBB,pA,pB
+      integer*8 planDct
+ 
+      real tempDn
+      integer self_flag
+#endif
+#ifdef COORDTRANS
+c     For the potential calculation using the "pure Fourier" method:
+      integer jk,kk
+      real Lx,Ly,Lx2,Ly2
+#endif
+#ifdef CARTESIAN
+       real xy_rd, xy_th
+       integer tmp_ir, tmp_ith
+
+       real jp, kp 
+       real amp_k2(Nxx,Nyy)
+       real xnormal, qa1, qa2
+       integer hNxx, hNyy
+
+       common /gravnor/ qa1, qa2, gconst
+       common /gravker/ amp_k2
+  
+       real xxc, yyc
+       integer tmp_ix, tmp_iy
+
+c doosu tmp time check
+c       real etime
+c       real elapsed(2)
+c       real stim,etim,dtim
+c doosu end
+#endif
+
+
+
+#endif /* SELFGRAV */
+
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////
+c=======================================================================
+c
+c     assumed that igrav=1 and igeom=1
+#ifdef PINERMODEL
+      namelist /pgen/ amp,npar,amode,n,aob,rl,qm,rhoc,bartime,gheight,
+     &                r_th,gam,bhmass
+      common /diskthick / gheight
+#endif
+#ifdef YUANMODEL
+      namelist /pgen2/ amp,v0_yu,pot0_yu,a_yu,pattern_yu,bartime
+#endif
+#ifdef ROBERTSMODEL
+      namelist /pgen3/ amp,spiralOX,Aconst_ro,a_ro,B2_ro,w0_ro,N_ro
+     &                ,i0_ro,pattern_ro,bartime
+#endif
+      namelist /spiral/ spamp,spsc,spang,sppat,sr,pc
+      namelist /pgrid/pot0,pot1,naxis1,naxis2,rmax,omega,gamma,
+     *                crval1,crval2,crpix1,crpix2,cdelt1,cdelt2,
+     *                rhalo,vhalo,rtstart,rtscale,rnstart,rnscale,
+     *                nrh,nth
+      ndim=3
+      npar=10
+      name='dummy'
+      pot0=' '
+      pot1=' '
+      naxis1=0
+      naxis2=0
+      crval1=0.0
+      crval2=0.0
+      cdelt1=1.0
+      cdelt2=1.0
+      crpix1=1.0
+      crpix2=1.0
+      rmax=0.0
+      omega=0.0
+      gamma=1.0
+      rhalo=1.0
+      vhalo=0.0
+      rtstart=1000.0
+      rtscale=1000.0
+
+      rnstart=-0.3
+      rnscale=0.05
+
+      nrh=0
+      nth=0
+
+#ifdef PINERMODEL
+      write(2,*) 'PINER MODEL'
+      read (1,pgen)
+      write(2,pgen)
+#endif
+#ifdef YUANMODEL
+      write(2,*) 'YUAN MODEL'
+      read (1,pgen2)
+      write(2,pgen2)
+#endif
+#ifdef ROBERTSMODEL 
+      write(2,*) 'ROBERTS MODEL'
+      read (1,pgen3)
+      write(2,pgen3)
+#endif
+      read (1,spiral)
+      write(2,spiral)
+      read (1,pgrid)
+      write(2,pgrid)
+
+#ifdef SELFGRAV
+      tsgst = 0.
+      write(2,*) 'SELFGRAVITY ON'
+#ifdef SELFG_TURNON
+      timesg = 0.300
+      tscalesg = 0.05
+      write(2,*) 'SELFG_TRUN ON'
+      write(2,*) 'start selfg =',timesg
+      write(2,*) 'scale selfg =',tscalesg
+#endif
+#ifdef MILLERPOT
+      write(2,*) 'MILLER SCHEME'
+#endif
+
+#ifdef COORDTRANS
+      write(2,*) 'COORDINATES TRANS'
+#endif
+#ifdef CARTESIAN
+      write(2,*) 'CARTESIAN GRID'
+      write(2,*) 'grid_Nx =', Nxx
+      write(2,*) 'grid_Ny =', Nyy
+      write(2,*) 'grid_npad =',npad
+#endif
+#endif
+c wooyoung test
+c      open(unit=777,file='test_Nm_a2',status='unknown')
+c doosu start
+      open(unit=50,file='coord_'//id,status='unknown')
+c      open(unit=55,file='square',status='unknown')
+      do j=1,jn
+c         write(50,*) j, y(j)
+         write(50,*) j, radius(j)
+c         write(55,*) j, y(j),dy(j),y(j)*dz(ks),dy(j)-y(j)*dz(ks)
+      enddo
+c       print*,js,je,y(js),y(je)
+      close(unit=50)
+c      close(unit=55)
+      open(unit=51,file='coordall_'//id,status='unknown'
+     &    ,form='unformatted')
+      write(51) (j,j=1,jn),(y(j),j=1,jn),(radius(j),j=1,jn)
+      write(51) (k,k=1,kn),(z(k),k=1,kn),(zcenteul(k),k=1,kn)
+      close(unit=51)
+c      stop
+c doosu end
+
+#ifdef SELFGRAV
+#ifdef CARTESIAN
+c box size
+      Lx = npad*y(je+3)
+      Ly = Lx
+      Lx2 = Lx*Lx
+      Ly2 = Ly*Ly
+      hNxx = Nxx/2
+      hNyy = Nyy/2
+
+      do 110 k=1,Nyy
+         yc(k) = Lx*((float(k)-0.5)/float(Nyy)-0.5) 
+         do 110 j=1,Nxx  
+c initialize
+            din(j,k)         = 0.
+            pin(j,k)         = 0.
+c
+            if (k .eq. 1) xc(j) = Lx*((float(j)-0.5)/float(Nxx)-0.5)
+
+            xy_rd = sqrt(xc(j)*xc(j) + yc(k)*yc(k))
+            xy_th = (0.5-sign(0.5,yc(k)))*pi*2. 
+     &              + sign(1.,yc(k))*acos(xc(j)/xy_rd)
+            if (xy_th .ge. 1.5*pi) xy_th = xy_th - 2.*pi
+
+c            print*,xc(j),yc(k),xy_rd,xy_th
+
+            if (xy_rd .ge. y(je+1)) then
+               xy_rdd(j,k) = 0.
+               xy_thd(j,k) = 0.
+               xy_frd(j,k) = 0.
+               xy_fth(j,k) = 0.
+             else if (xy_rd .lt. y(js)) then
+               xy_rdd(j,k) = -1.
+               xy_thd(j,k) = 0.
+               xy_frd(j,k) = 0.
+               xy_fth(j,k) = 0.
+             else
+               xy_rdd(j,k) = 1./alog(selfyrat)*alog((selfyrat-1.)
+     &                    /selfyrat*(xy_rd-selfymin)/selfdymin+1.)+5.
+               xy_thd(j,k) = (xy_th-selfzmin)/selfdzmin+4.
+ 
+               tmp_ir = xy_rdd(j,k)
+               tmp_ith = xy_thd(j,k)
+               xy_frd(j,k) = xy_rdd(j,k)-tmp_ir
+               xy_fth(j,k) = xy_thd(j,k)-tmp_ith
+        
+c iteration for accurate index
+  108 continue
+               if (xy_rd.lt.y(tmp_ir)) then
+                  tmp_ir=tmp_ir-1 
+                  xy_rdd(j,k) = xy_rdd(j,k)-1.
+                  xy_frd(j,k) = 1.      /*nearest position */
+                else if (xy_rd .ge. y(tmp_ir+1)) then
+                  tmp_ir=tmp_ir+1
+                  xy_rdd(j,k) = xy_rdd(j,k)+1.
+                  xy_frd(j,k) = 0.
+               endif
+
+               if ((xy_rd.lt.y(tmp_ir)).or.(xy_rd.ge.y(tmp_ir+1))) 
+     &          then 
+                 print*,"Warning!!: ",j,k,xy_rd,y(tmp_ir),y(tmp_ir+1)
+                 goto 108
+               endif
+
+               if (xc(j) .ge. 0) then
+  109 continue
+               if (xy_th.lt.z(tmp_ith)) then
+                  tmp_ith=tmp_ith-1
+                  xy_thd(j,k) = xy_thd(j,k)-1.
+                  xy_fth(j,k) = 1.
+                 else if (xy_th.ge.z(tmp_ith+1)) then
+                  tmp_ith=tmp_ith+1
+                  xy_thd(j,k) = xy_thd(j,k)+1.
+                  xy_fth(j,k) = 0.
+               endif
+               if ((xy_th.lt.z(tmp_ith)).or.(xy_th.ge.z(tmp_ith+1)))
+     &          then
+               print*,"Warning!!: ",j,k,xy_th,z(tmp_ith),z(tmp_ith+1)
+               goto 109
+               endif
+               endif
+            endif 
+  110 continue
+      do j=1,Nxx
+         if (xc(j) .ge. y(je+2)) then
+            inNxx = j
+            goto 111 
+         endif
+      enddo
+  111 continue
+      do k=1,Nyy
+         if (yc(k) .ge. y(je+2)) then
+            inNyy = k
+            goto 112
+         endif
+      enddo
+  112 continue
+
+c      open(unit=123,file='tmp_rdd.dat',status='unknown'
+      open(unit=123,file='selfgrid_'//id//'.dat',status='unknown'
+     &     ,form='unformatted')
+      write(123) (xc(j),j=1,Nxx),(yc(k),k=1,Nyy)
+      write(123) ((xy_frd(j,k),j=1,Nxx),k=1,Nyy)
+      write(123) ((xy_fth(j,k),j=1,Nxx),k=1,Nyy)
+      close(unit=123)
+
+      do 113 k=1,ke+1
+      do 113 j=1,je+1
+         xxc = radius(j)*cos(zcenteul(k))
+         yyc = radius(j)*sin(zcenteul(k)) 
+
+         rth_xd(j,k) = 0.5 + (xxc/Lx + 0.5)*Nxx
+         rth_yd(j,k) = 0.5 + (yyc/Lx + 0.5)*Nyy
+
+         tmp_ix = rth_xd(j,k)
+         tmp_iy = rth_yd(j,k)
+
+         rth_fx(j,k) = rth_xd(j,k) - tmp_ix
+         rth_fy(j,k) = rth_yd(j,k) - tmp_iy
+
+c iteration for accurate index
+  114    continue
+         if (xxc.lt.xc(tmp_ix)) then 
+            tmp_ix = tmp_ix-1
+            rth_xd(j,k) = rth_xd(j,k)-1.
+            rth_fx(j,k) = 1.
+          else if (xxc.ge.xc(tmp_ix+1)) then
+            tmp_ix = tmp_ix+1
+            rth_xd(j,k) = rth_xd(j,k)+1.
+            rth_fx(j,k) = 0.
+         endif
+         if ((xxc.lt.xc(tmp_ix)).or.(xxc.ge.xc(tmp_ix+1))) then
+            print*,"warning!",j,k,xxc,xc(tmp_ix),xc(tmp_ix+1)
+            goto 114
+         endif
+  115    continue
+         if (yyc.lt.yc(tmp_iy)) then 
+            tmp_iy = tmp_iy-1
+            rth_yd(j,k) = rth_yd(j,k)-1.
+            rth_fy(j,k) = 1.
+          else if (yyc.ge.yc(tmp_iy+1)) then
+            tmp_iy = tmp_iy+1
+            rth_yd(j,k) = rth_yd(j,k)+1.
+            rth_fy(j,k) = 0.
+         endif
+         if ((yyc.lt.yc(tmp_iy)).or.(yyc.ge.yc(tmp_iy+1))) then
+            print*,"warning!",j,k,yyc,yc(tmp_iy),yc(tmp_iy+1)
+            goto 115
+         endif
+  113 continue
+#endif
+#endif
+
+#ifdef PSEUDOP
+      write(2,*) 'PSEUDOPARTICLE ON'
+      idum=100
+      idum2=111
+      do 120 j=1,npsd 
+        psdy(j) = sqrt(ran2(idum))*(y(je)-y(js))+y(js)
+        psdz(j) = ran2(idum2)*(z(ke)-z(ks))+z(ks)
+120   enddo
+c      stop
+#endif
+C
+C  there are two modes of using PGRID:    when pot0 given, it will 
+C  use the external file (a fits file), else it will use an internal
+C  grid, i.e. pot0/pot1 is filled on the fly from the analytical
+C  potential
+C
+      if (pot0 .ne. ' ') then
+#ifdef FITSIO
+	write(*,*) 'Using a grid from an external file: ',pot0
+	rwmode = 0
+	status = 0
+	call ftgiou(flun,status)
+	call ftgerr(status,errtxt)
+
+	call ftopen(flun,pot0,rwmode,bsize,status)
+	call ftgisz(flun, 2, naxes,status)
+	naxis1 = naxes(1)
+	naxis2 = naxes(2)
+	write(*,*) 'Found image ',naxis1,naxis2
+	call ftg2de(flun,0,0.0,PGMAX,naxis1,naxis2,gpot0,anyf,status)
+	call ftgerr(status,errtxt)
+	call ftgkye(flun,'CRPIX1',crpix1,comment,status)
+	call ftgkye(flun,'CRPIX2',crpix2,comment,status)
+	call ftgkye(flun,'CRVAL1',crval1,comment,status)
+	call ftgkye(flun,'CRVAL2',crval2,comment,status)
+	call ftgkye(flun,'CDELT1',cdelt1,comment,status)
+	call ftgkye(flun,'CDELT2',cdelt2,comment,status)
+	write(*,*) 'ftopen pot0: ',status,' ',errtxt,naxis1,naxis2
+	write(*,*) 'X-range: ',(1-crpix1)*cdelt1+crval1,' ...',
+     *                    (naxis1-crpix1)*cdelt1+crval1,' kpc.'
+	write(*,*) 'Y-range: ',(1-crpix2)*cdelt2+crval2,' ...',
+     *                    (naxis2-crpix2)*cdelt2+crval2,' kpc.'
+	write(*,*) '(wcs: ',crpix1,crpix2,crval1,crval2,cdelt1,cdelt2,')'
+	call ftclos(flun,status)
+	call ftgerr(status,errtxt)
+	write(*,*) 'ftclos pot0: ',status,' ',errtxt
+        if (status.ne.0) stop
+
+	call ftopen(flun,pot1,rwmode,bsize,status)
+	if (status.eq.0) then
+	  call ftgisz(flun, 2, naxes,status)
+	  if (naxis1.ne.naxes(1)) stop
+   	  if (naxis2.ne.naxes(2)) stop
+	  call ftg2de(flun,0,0.0,PGMAX,naxis1,naxis2,gpot1,anyf,status)
+	  call ftgerr(status,errtxt)
+	  call ftclos(flun,status)
+	  call ftgerr(status,errtxt)
+	  write(*,*) 'ftclos pot1: ',status,' ',errtxt
+          if (status.ne.0) stop
+        else
+c         TODO:  if really requested, and not found, it should be an error and bomb here!
+          write(*,*) 'No pot1 - only constant axisymmetric potential'
+	  do 3 k=1,PGMAX
+	  do 3 j=1,PGMAX
+		gpot1(j,k) = 0.0
+   3	  continue
+        endif
+
+	nx = naxis1
+	ny = naxis2
+	gcrpix1 = crpix1
+	gcrpix2 = crpix2
+	gcrval1 = crval1
+	gcrval2 = crval2
+	gcdelt1 = cdelt1
+	gcdelt2 = cdelt2
+	grmax = 0.0
+	gomega = omega
+	gvhalo = vhalo
+	grhalo = rhalo
+	ggamma = gamma
+        grtstart = rtstart
+        grtscale = rtscale
+	write(*,*) 'Pattern speed omega = ',omega
+	write(*,*) 'Halo: vhalo,rhalo= ',vhalo,rhalo
+	write(*,*) 'Disk: gamma= ',gamma
+	write(*,*) 'Nucl tapering: start,scale=',rnstart,rnscale
+	write(*,*) 'Edge tapering: start,scale=',rtstart,rtscale
+	write(*,*) 'Hanning smooth r,t: ',nrh,nth
+#else
+	write(*,*) 'Support for FITSIO was not enabled - '
+	write(*,*) 'You probably should edit cmhog.def and Makefile'
+	STOP
+#endif
+C
+C  the send mode of using 'pgrid' is setting the number of pixels of the grid,
+C  and an internal grid is computed exactly from the analytical potential
+C  NEMO routines can also generate those externally on a grid, but this method
+C  makes the program independant of NEMO
+C
+      else if (naxis1.gt.0 .and. naxis2.gt.0) then
+					
+	write(*,*) 'Using an internal grid; size=',naxis1,naxis2,
+     *             ' rmax=',rmax
+	nx = naxis1
+	ny = naxis2
+	gcrpix1 = crpix1
+	gcrpix2 = crpix2
+	gcrval1 = crval1
+	gcrval2 = crval2
+	gcdelt1 = cdelt1
+	gcdelt2 = cdelt2
+	grmax = rmax
+	gomega = omega
+        ggamma = gamma
+	write(*,*) 'Pattern speed omega = ',omega
+      endif
+C
+#ifdef PINERMODEL
+      do 5 i=1,npar
+	if (i.eq.1) par(i)=omega
+	if (i.eq.2) par(i)=amode
+	if (i.eq.3) par(i)=n
+	if (i.eq.4) par(i)=aob
+	if (i.eq.5) par(i)=rl
+	if (i.eq.6) par(i)=0.0
+	if (i.eq.7) par(i)=rhoc
+	if (i.eq.8) par(i)=r_th
+	if (i.eq.9) par(i)=gam
+	if (i.eq.10) par(i)=bhmass
+5     continue
+c        print out the grid values, both center and edges
+      if (.false.) then
+         do  101 j=js-3,je+3
+            write(*,*) 'J: ',j,radius(j),y(j)
+ 101     continue
+         do 102 k=ks-1,ke+1
+            write(*,*) 'K: ',k,zcenteul(k),z(k)
+ 102     continue
+
+      endif
+
+c   	first set par(6) = 0, i.e. determine the radial (Y) forces 
+c 	when no bar is present.
+
+      call inipotential(npar,par,name)
+C
+#endif /*PINERMODEL*/   
+      if (nyz.gt.1) then
+	do 7 j=js-3,je+3
+	 do 6 k=ks,ke+1
+#ifdef PINERMODEL
+          pos(1)=y(j)*cos(zcenteul(k))
+	  pos(2)=y(j)*sin(zcenteul(k))
+	  pos(3)=0.0
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  diskyed(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			 +(acc(2)*sin(zcenteul(k)))
+	  pos(1)=radius(j)*cos(zcenteul(k))
+	  pos(2)=radius(j)*sin(zcenteul(k))
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  diskycen(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			  +(acc(2)*sin(zcenteul(k)))
+#endif /*PINERMODEL*/
+#ifdef YUANMODEL
+          diskyed(j,k) = -v0_yu**2 * y(j) / (1.+y(j)**1.1)**2
+          diskycen(j,k)= -v0_yu**2 * radius(j)/(1.+radius(j)**1.1)**2
+#endif /*YUANMODEL*/
+#ifdef ROBERTSMODEL 
+          diskyed(j,k) = -B2_ro * a_ro**3 * y(j) 
+     &                  / (a_ro*a_ro + y(j)*y(j))**1.5
+          diskycen(j,k)= -B2_ro * a_ro**3 * radius(j)
+     &                  / (a_ro*a_ro + radius(j)*radius(j))**1.5
+#endif /*ROBERTSMODEL*/
+6        continue
+        
+         if (y(j).lt.rnstart) 
+     &    call taper(diskyed,jn,j,ks,ke+1,y(j),rnstart,rnscale)
+         if (radius(j).lt.rnstart) 
+     &    call taper(diskycen,jn,j,ks,ke+1,radius(j),rnstart,rnscale)
+
+         if (y(j).gt.rtstart) 
+     &    call taper(diskyed,jn,j,ks,ke+1,y(j),rtstart,rtscale)
+         if (radius(j).gt.rtstart) 
+     &    call taper(diskycen,jn,j,ks,ke+1,radius(j),rtstart,rtscale)
+
+7       continue
+      endif
+#ifdef PINERMODEL
+c
+c   	second, set par(6) = qm, i.e. determine the radial (Y) and
+c	tangential (Z) forces when a bar is present.
+
+      par(6)=qm
+      call inipotential(npar,par,name)
+#endif /*PINERMODEL*/
+      if (nyz.gt.1) then
+	do 9 j=js-3,je+3
+	 do 8 k=ks,ke+1
+#ifdef PINERMODEL
+          pos(1)=y(j)*cos(zcenteul(k))
+	  pos(2)=y(j)*sin(zcenteul(k))
+	  pos(3)=0.0
+	  call potential (ndim,pos,acc,pot,dumtime)
+c doosu print potential
+#ifdef INITCHECK
+          pot_out(j,k) = pot
+          barf(j,k) = (FYBAR*cos(zcenteul(k)))
+     &                  +(FXBAR*sin(zcenteul(k)))
+          diskf(j,k) = (FYDISK*cos(zcenteul(k)))
+     &                    +(FXDISK*sin(zcenteul(k)))
+          bulf(j,k)  = (FYBUL*cos(zcenteul(k)))
+     &                    +(FXBUL*sin(zcenteul(k)))
+#endif
+c doosu end
+	  baryed(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			+(acc(2)*sin(zcenteul(k)))
+	  pos(1)=radius(j)*cos(zcenteul(k))
+	  pos(2)=radius(j)*sin(zcenteul(k))
+	  call potential (ndim,pos,acc,pot,dumtime)
+	  barycen(j,k)=(acc(1)*cos(zcenteul(k)))
+     &			 +(acc(2)*sin(zcenteul(k)))
+#endif /*PINERMODEL*/
+#ifdef YUANMODEL
+          baryed(j,k) =  diskyed(j,k) - pot0_yu*2.*y(j)
+     &                   *(a_yu**2-y(j)**2)/(a_yu**2+y(j)**2)**3
+     &                   *cos(2.*zcenteul(k))
+          barycen(j,k) = diskycen(j,k) - pot0_yu*2.*radius(j)
+     &                   *(a_yu**2-radius(j)**2)
+     &                   /(a_yu**2+radius(j)**2)**3
+     &                   *cos(2.*zcenteul(k))
+#endif /*YUANMODEL*/
+#ifdef ROBERTSMODEL 
+        if (spiralOX .eq. 1) then 
+          baryed(j,k) =  diskyed(j,k) - Aconst_ro*B2_ro*a_ro**5
+     &                   *y(j)/5./(a_ro*a_ro + y(j)*y(j))**3.5
+     &                   *((3.*y(j)*y(j)-2.*a_ro*a_ro)
+     &                   *cos(2.*zcenteul(k) + PHI_ro(y(j)))
+     &                   +2./tan(i0_ro)/(1.+(y(j)/w0_ro)**(-N_ro))
+     &                   *(a_ro*a_ro + y(j)*y(j))
+     &                   *sin(2.*zcenteul(k) + PHI_ro(y(j))))
+          barycen(j,k) = diskycen(j,k) - Aconst_ro*B2_ro*a_ro**5
+     &                   *radius(j)/5.
+     &                   /(a_ro*a_ro + radius(j)*radius(j))**3.5
+     &                   *((3.*radius(j)*radius(j)-2.*a_ro*a_ro)
+     &                   *cos(2.*zcenteul(k) + PHI_ro(radius(j)))
+     &                   +2./tan(i0_ro)
+     &                   /(1.+(radius(j)/w0_ro)**(-N_ro))
+     &                   *(a_ro*a_ro + radius(j)*radius(j))
+     &                   *sin(2.*zcenteul(k) + PHI_ro(radius(j))))
+        else
+          baryed(j,k) =  diskyed(j,k) - Aconst_ro*B2_ro*a_ro**5
+     &                   *y(j)/5./(a_ro*a_ro + y(j)*y(j))**3.5
+     &                   *(3.*y(j)*y(j)-2.*a_ro*a_ro)
+     &                   *cos(2.*zcenteul(k))
+          barycen(j,k) = diskycen(j,k) - Aconst_ro*B2_ro*a_ro**5
+     &                   *radius(j)/5.
+     &                   /(a_ro*a_ro + radius(j)*radius(j))**3.5
+     &                   *(3.*radius(j)*radius(j)-2.*a_ro*a_ro)
+     &                   *cos(2.*zcenteul(k))
+        endif
+#endif /*ROBERTSMODEL*/
+          if (y(j).gt.sr) then
+            arg=2.0*((log(y(j)-sr)/tan(spang))-zcenteul(k))+pc
+            spyed(j,k)=-spamp*(y(j)-sr)**2*exp(-spsc*(y(j)-sr))*
+     &                ((3.0-spsc*(y(j)-sr))*cos(arg)-
+     &                (2.0/tan(spang))*sin(arg))
+          else
+            spyed(j,k)=0.0
+          endif
+c          if (y(j).gt.16.) then
+c            spyed(j,k)=spyed(j,k)*exp(16.0-y(j))
+c          endif
+          if (radius(j).gt.sr) then
+            arg=2.0*((log(radius(j)-sr)/tan(spang))-zcenteul(k))+pc
+            spycen(j,k)=-spamp*(radius(j)-sr)**2*
+     &                 exp(-spsc*(radius(j)-sr))*
+     &                 ((3.0-spsc*(radius(j)-sr))*cos(arg)-
+     &                 (2.0/tan(spang))*sin(arg))
+          else
+            spycen(j,k)=0.0
+          endif
+c bhmass increase
+            bhycen(j,k)=4.29569*radius(j)
+     *                  *(radius(j)**2.0+0.001**2.0)**(-1.5)
+            bhyed(j,k)=4.29569*y(j)
+     *                  *(y(j)**2.0+0.001**2.0)**(-1.5)
+c bhmass increase end          
+c          if (radius(j).gt.16.) then
+c            spycen(j,k)=spycen(j,k)*exp(16.0-radius(j))
+c          endif
+8        continue
+         if (y(j).lt.rnstart) 
+     &     call taper(baryed,jn,j,ks,ke+1,y(j),rnstart,rnscale)
+         if (radius(j).lt.rnstart) 
+     &     call taper(barycen,jn,j,ks,ke+1,radius(j),rnstart,rnscale)
+
+         if (y(j).gt.rtstart) 
+     &     call taper(baryed,jn,j,ks,ke+1,y(j),rtstart,rtscale)
+         if (radius(j).gt.rtstart) 
+     &     call taper(barycen,jn,j,ks,ke+1,radius(j),rtstart,rtscale)
+9       continue
+      endif
+c
+#ifdef PINERMODEL
+#ifdef INITCHECK
+c doosu extract information
+      open(unit=12,file='forces_'//id//'.dat',status='unknown',
+     &     form='unformatted')
+      write(12) ((diskf(j,k),j=js-3,je+3),k=ks,ke)
+      write(12) ((bulf(j,k),j=js-3,je+3),k=ks,ke)
+      write(12) ((barf(j,k),j=js-3,je+3),k=ks,ke)
+      write(12) ((dble(baryed(j,k)),j=js-3,je+3),k=ks,ke) /*total*/
+      close(unit=12)
+      open(unit=902,file='total_pot_'//id//'.dat',status='unknown',
+     &     form='unformatted')
+      write(902) ((pot_out(j,k),j=js-3,je+3),k=ks,ke)
+      close(unit=902)
+c doosu end
+#endif
+#endif /*PINERMODEL*/
+#if defined(YUANMODEL) || defined(ROBERTSMODEL)
+#ifdef INITCHECK2
+      open(unit=12,file='forces_'//id//'.dat',status='unknown',
+     &     form='unformatted')
+      write(12) ((dble(diskyed(j,k)),j=js-3,je+3),k=ks,ke)
+      write(12) ((dble(baryed(j,k)),j=js-3,je+3),k=ks,ke) /*total*/
+      close(unit=12)
+#ifdef YUANMODEL 
+      write(2,*) 'PATTERN2 = ',pattern_yu
+#endif
+#ifdef ROBERTSMODEL 
+      write(2,*) 'PATTERN2 = ',pattern_ro
+#endif
+#endif
+#endif /*YUANMODEL OR ROBERTSMODEL*/
+c doosu spiral potential
+c      open (unit=900,file='spy.dat',form='unformatted')
+c      write(900) spyed
+c      close(unit=900)
+c      open (unit=901,file='coord_th.dat',status='unknown')
+c      do k=ks,ke
+c         write(901,*) k,z(k)
+c      enddo
+c      close(unit=901)
+c      stop
+c doosu end
+c
+      if (nzz.gt.1) then
+	do 11 j=js,je
+	 do 10 k=ks-1,ke+1
+#ifdef PINERMODEL
+          pos(1)=radius(j)*cos(z(k))
+	  pos(2)=radius(j)*sin(z(k))
+	  pos(3)=0.0
+	  call potential (ndim,pos,acc,pot,dumtime)
+c       wrong part!!
+c	  barzed(j,k)=(acc(1)*sin(z(k)))-(acc(2)*cos(z(k)))
+          barzed(j,k)=-(acc(1)*sin(z(k)))+(acc(2)*cos(z(k)))   
+	  pos(1)=radius(j)*cos(zcenteul(k))
+	  pos(2)=radius(j)*sin(zcenteul(k))
+	  call potential (ndim,pos,acc,pot,dumtime)
+c  	  barzcen(j,k)=(acc(1)*sin(zcenteul(k)))
+c     &			 - (acc(2)*cos(zcenteul(k)))
+          barzcen(j,k)=-(acc(1)*sin(zcenteul(k)))
+     &                   + (acc(2)*cos(zcenteul(k)))   
+#endif /*PINERMODEL*/
+#ifdef YUANMODEL
+         barzed(j,k)=2.*pot0_yu*radius(j)/(a_yu**2+radius(j)**2)**2
+     &               *sin(2.*z(k))
+         barzcen(j,k)=2.*pot0_yu*radius(j)/(a_yu**2+radius(j)**2)**2
+     &                *sin(2.*zcenteul(k))
+#endif /*YUANMODEL*/
+#ifdef ROBERTSMODEL
+       if (spiralOX .eq. 1) then
+         barzed(j,k)= -2.*Aconst_ro*B2_ro*a_ro**5 * radius(j)
+     &                /5./(a_ro*a_ro + radius(j)*radius(j))**2.5
+     &                *sin(2.*z(k) + PHI_ro(radius(j)))
+         barzcen(j,k)= -2.*Aconst_ro*B2_ro*a_ro**5 * radius(j)
+     &                /5./(a_ro*a_ro + radius(j)*radius(j))**2.5
+     &                *sin(2.*zcenteul(k) + PHI_ro(radius(j)))
+       else
+         barzed(j,k)= -2.*Aconst_ro*B2_ro*a_ro**5 * radius(j)
+     &                /5./(a_ro*a_ro + radius(j)*radius(j))**2.5
+     &                *sin(2.*z(k))
+         barzcen(j,k)= -2.*Aconst_ro*B2_ro*a_ro**5 * radius(j)
+     &                /5./(a_ro*a_ro + radius(j)*radius(j))**2.5
+     &                *sin(2.*zcenteul(k))
+       endif
+#endif /*ROBERTSMODEL*/
+          if (radius(j).gt.sr) then
+            arg=2.0*((log(radius(j)-sr)/tan(spang))-z(k))+pc
+            spzed(j,k)=-2.0*spamp*(radius(j)-sr)**2*
+     &                 exp(-spsc*(radius(j)-sr))*sin(arg)
+            arg=2.0*((log(radius(j)-sr)/tan(spang))-zcenteul(k))+pc
+            spzcen(j,k)=-2.0*spamp*(radius(j)-sr)**2*
+     &                 exp(-spsc*(radius(j)-sr))*sin(arg)
+          else
+            spzed(j,k)=0.0
+            spzcen(j,k)=0.0
+          endif
+c          if (radius(j).gt.16.) then
+c            spzed(j,k)=spzed(j,k)*exp(16.0-radius(j))
+c            spzcen(j,k)=spzcen(j,k)*exp(16.0-radius(j))
+c          endif
+10     continue
+       if (radius(j).lt.rnstart)
+     &   call taper(barzed,jn,j,ks-1,ke+1,radius(j),rnstart,rnscale)
+       if (radius(j).lt.rnstart)
+     &   call taper(barzcen,jn,j,ks-1,ke+1,radius(j),rnstart,rnscale)
+
+       if (radius(j).gt.rtstart)
+     &   call taper(barzed,jn,j,ks-1,ke+1,radius(j),rtstart,rtscale)
+       if (radius(j).gt.rtstart)
+     &   call taper(barzcen,jn,j,ks-1,ke+1,radius(j),rtstart,rtscale)
+  
+11    continue
+      endif
+c
+c      do 20 k=ks,ke
+c      do 20 j=js,je
+
+
+c for reatart
+c      open(111,file='restart.dat')
+
+
+
+      do 20 k=1,kn
+      do 20 j=1,jn
+
+c        read(111,*) dd,vv,ww
+c Toomre Test
+        d(j,k)=amp!/(radius(j)+0.5)*(1.0+0.001*ran2(idum))
+c        d(j,k)=dd
+
+#ifdef SELFGRAV
+        d_init(j,k)=d(j,k)
+#endif
+       w(j,k)=sqrt(abs(radius(j)*diskycen(j,k)))
+       v(j,k)=0.
+c        w(j,k)=ww
+c        v(j,k)=vv
+20    continue
+#ifdef PINERMODEL
+      vgz=par(1)
+#endif
+#ifdef YUANMODEL
+      vgz=pattern_yu
+#endif
+#ifdef ROBERTSMODEL 
+      vgz=pattern_ro
+#endif
+      vspiral=sppat-vgz
+
+#ifdef SELFGRAV
+      gconst = 4.298
+      soft = 0. 
+
+c      initialize FFT (for mass DFTs)
+      call fftplnct_rpz
+#ifdef MILLERPOT
+c
+c     Create plan for forward FFT of Dpot
+      call sfftw_plan_dft_r2c_1d(planDct,NCOPY*N2,Dn,FTDn,FFTW_ESTIMATE)
+c
+c Compute Potential Energy matrix, and its Fourier Transform
+c
+      coeff=gconst/(1.*N2)
+
+      self_flag = 0
+
+      do j2 = 1, N1
+         rBB = radius( j2+js-1 )
+         do 22 j = 1, N1
+c            if(j .eq. j2) goto 22
+            rA = radius( j+js-1 )
+            do k = 1, N2*NCOPY
+               angdiff(k) = (k-1)*(zcenteul(4)-zcenteul(3))
+               tempDn = (rA*rA + rBB*rBB + soft*soft -
+     1              2.*rA*rBB*cos(angdiff(k)) ) ** (0.5)
+               Dn(k) = -coeff/tempDn
+c               Dn(k) = -coeff*(rA*rA + rBB*rBB + soft*soft -
+c     1              2.*rA*rBB*cos(angdiff(k)) ) ** (-0.5)
+
+               if (self_flag .eq. 1) then 
+                  Dn(k-1) = Dn(k)
+                  self_flag = 0
+               endif
+               if (tempDn .eq. 0) self_flag = 1
+
+c               if ((j .eq. j2) .and. (k .eq. 1)) print*,j2,j,k,Dn(k)
+c               if (abs(Dn(k)) .lt. 5.e-4) print*,j2,j,k,Dn(k)
+            enddo
+c            do k=1,N2*NCOPY
+c               print*, Dn(k),j,j2,k
+c            enddo
+c     Execute forward FFT
+            call sfftw_execute(planDct)
+            do k = 1, NCOPY*N2/2 + 1
+               FTDpot(j2,k,j) = FTDn(k)
+            enddo
+c            do k=1,N2*NCOPY/2+1
+c               print*, FTDn(k),j,j2,k
+c            enddo
+c            stop
+ 22      continue
+      enddo
+c      do k=1, N2*NCOPY
+c         angdiff(k) = (k-1)*(zcenteul(4)-zcenteul(3))
+c         DDD(k) = (2.- 2*cos(angdiff(k)))**(-0.5)
+c      enddo
+
+c     Destroy plan
+      call sfftw_destroy_plan(planDct)
+#endif /* MILLERPOT */
+
+#ifdef COORDTRANS 
+
+c      H0 = 0.1
+      H0 = 0.
+      Ro_self = y(js) 
+
+      coeff=2.0*pi*gconst/(N1 * 1.0 * N2*NCOPY)
+
+      Lx = NCOPY*Ro_self*(log(y(je+1)/y(js)))
+      Ly = Ro_self*((z(ke+1) - z(ks)))
+      Lx2 = Lx*Lx
+      Ly2 = Ly*Ly
+
+      do k = 1, N2
+         kk = mod(k-1+hN2,N2) - hN2
+         do j = 1, NCOPY*hN1+1
+            jk = mod(j-1+NCOPY*hN1,NCOPY*N1) - NCOPY*hN1
+            if (2.*pi*jk/Lx .ge. N1/4 .OR. 2.*pi*kk/Ly .ge. N2/4) then
+               amp_k(j,k) = 1e+10
+            else
+              amp_k(j,k)=2.0*pi*sqrt(jk*jk/Lx2 + kk*kk/Ly2)
+            endif
+c         print*,kk,jk,amp_k(j,k)
+         enddo
+c         stop
+      enddo
+#endif /*  COORDTRANS */
+
+#ifdef CARTESIAN
+c create the plan of FFTW
+      call fftplnct
+
+c xnormal  = normalization factor in FFTW
+c amp_k2   = gravitational kernel
+      xnormal = Nxx*Nyy
+      qa1 = sqrt(pi*xnormal/gconst)
+      qa2 = xnormal / gconst
+
+      print*,Nxx,Nyy
+      do k = 1, Nyy
+         kp = mod(k-1+hNyy, Nyy) - hNyy
+         do j = 1, Nxx/2+1
+            jp = mod(j-1+hNxx, Nxx) - hNxx
+            amp_k2(j,k) = jp*jp/Lx2 + kp*kp/Ly2
+c for thin disks
+         enddo
+      enddo
+      amp_k2(1,1) = 1.
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc 
+      print*, 'cartesian grid b'  
+c      stim = etime(elapsed) 
+      call self_dintp(d)    /* substract d_init in the routine */
+      call self_gpot(gheight,din,pin)
+      call self_pintp(phi)
+      call gpotint(phi,phiyed,phized)
+      call gpotforce(phi,phiyed,phized)
+
+c      etim = etime(elapsed)
+c      dtim = etim - stim
+c      print*,"Time estimated : ",dtim
+      print*,'cartesian grid a'
+#endif
+
+#ifndef CARTESIAN
+      print*,'tst b'
+      call gpot(d-d_init,phi)
+c      call gpot(d,phi)
+      print *,'tst b2'
+c      call gpot(d,phi)
+      call gpotint(phi,phiyed,phized)
+      call gpotforce(phi,phiyed,phized)
+      print*,'tst a'
+#endif
+
+c doosu checkup grav
+      open(unit=333,file='selfgrav_cmhog'//id//'.dat',
+     &     form='unformatted')
+      write(333) (dble(radius(j)),j=1,jn)
+      write(333) ((dble(d(j,k)),j=1,jn),k=1,kn)
+      write(333) ((dble(d_init(j,k)),j=1,jn),k=1,kn)
+      write(333) ((dble(phi(j,k)),j=1,jn),k=1,kn)
+      close(333)
+      print*,jn,kn,dlimit,rcloud,amp
+c doosu end
+
+
+c for restart
+c      time = 0.3
+#endif /* SELFGRAV */
+
+C
+      if (.false.) then
+         open (unit=7,file='spforces.dat')
+         do 12 k=ks,ke
+            do 12 j=js,je
+               write (7,13) j,k,diskycen(j,k),spycen(j,k),spzcen(j,k) 
+ 13            format (2i5,3e14.5) 
+ 12      continue
+         close (unit=7)
+      endif
+      return
+      end
+c
+c  the potential near the center can be tapered to something more axisymmetric
+c  below radius of rnstart a gaussian taper of scale length rnscale is applied
+c  NOTE:: it is assumed that upon  rad < r0
+c
+      subroutine taper(a,ny,j,k1,k2,rad,r0,rs)
+      implicit none
+      integer ny,j,k1,k2
+      real a(ny,1),rad,r0,rs
+c
+      integer k
+      real t
+      double precision sum1, sum2
+      
+      sum1 = 0.0d0
+      sum2 = 0.0d0
+
+      do 100 k=k1,k2
+         sum1 = sum1 + a(j,k)
+         sum2 = sum2 + a(j,k)*a(j,k)
+        write(*,*) 'k=',k,a(j,k),sum1,sum2
+ 100  continue
+      sum1 = sum1/dble(k2-k1+1)
+      sum2 = sum2/dble(k2-k1+1) - sum1*sum1
+      if (sum2 .lt. 0) then
+         sum2 = -sqrt(-sum2)
+      else
+         sum2 = sqrt(sum2)
+      endif
+
+      if (rs.gt.0) then
+         t = exp(- (rad-r0)**2/(2*rs**2))
+         write(*,*) 'taper_1 ',sum1,sum2,j,k1,k2,rad,t
+         do 101 k=k1,k2
+            a(j,k) = t*a(j,k) + (1-t)*sum1
+ 101     continue
+      else
+         write(*,*) 'taper_0 ',sum1,sum2,j,k1,k2,rad,0
+         do 102 k=k1,k2
+            a(j,k) = sum1
+ 102     continue
+      endif
+
+      end
+
+c-------------------------------------------------------------------
+c Tapering inner few fixels.
+c-------------------------------------------------------------------
+      subroutine taper1(a,ny,nz,j,k1,k2)
+      implicit none
+      integer j,k,k1,k2,ny,nz
+      real a(ny,nz)
+      double precision sum
+
+      sum = 0.d0
+
+      do 200 k=k1,k2
+         sum = sum + a(j,k)
+  200 continue
+      sum = sum/dble(k2-k1+1)
+      do 201 k=k1,k2
+         a(j,k) = sum
+  201 continue
+      return
+      end
+
+#ifdef ROBERTSMODEL
+c-------------------------------------------------------------------
+c PHI function for ROBERTS model
+c-------------------------------------------------------------------
+      function PHI_ro(r)
+      real   r
+      real*8 PHI_ro
+      real*8 N_ro,i0_ro,w0_ro  
+      COMMON /roberts/ N_ro,i0_ro,w0_ro 
+   
+      PHI_ro = 2. / N_ro / tan(i0_ro)
+     &         *log(1.+(r/w0_ro)**N_ro)
+      return
+      end 
+#endif /*ROBERTSMODEL*/
+
+c----------------------------------------------------------------
+c function of random generation [ran2: numerical recipe]
+c----------------------------------------------------------------
+      FUNCTION ran2(idum)
+      INTEGER idum,IM1,IM2,IMM1,IA1,IA2,IQ1,IQ2,IR1,IR2,NTAB,NDIV
+      REAL ran2,AM,EPS,RNMX
+      PARAMETER (IM1=2147483563,IM2=2147483399,AM=1./IM1,IMM1=IM1-1,
+     *IA1=40014,IA2=40692,IQ1=53668,IQ2=52774,IR1=12211,IR2=3791,
+     *NTAB=32,NDIV=1+IMM1/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
+      INTEGER idum2,j,k,iv(NTAB),iy
+      SAVE iv,iy,idum2
+      DATA idum2/123456789/, iv/NTAB*0/, iy/0/
+      if (idum.le.0) then
+        idum=max(-idum,1)
+        idum2=idum
+        do 11 j=NTAB+8,1,-1
+          k=idum/IQ1
+          idum=IA1*(idum-k*IQ1)-k*IR1
+          if (idum.lt.0) idum=idum+IM1
+          if (j.le.NTAB) iv(j)=idum
+11      continue
+        iy=iv(1)
+      endif
+      k=idum/IQ1
+      idum=IA1*(idum-k*IQ1)-k*IR1
+      if (idum.lt.0) idum=idum+IM1
+      k=idum2/IQ2
+      idum2=IA2*(idum2-k*IQ2)-k*IR2
+      if (idum2.lt.0) idum2=idum2+IM2
+      j=1+iy/NDIV
+      iy=iv(j)-idum2
+      iv(j)=idum
+      if(iy.lt.1)iy=iy+IMM1
+      ran2=min(AM*iy,RNMX)
+      return
+      END
+C  (C) Copr. 1986-92 Numerical Recipes Software *1a311+)-.
+

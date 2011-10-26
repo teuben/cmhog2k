@@ -1,0 +1,173 @@
+#include "cmhog.def"
+c=======================================================================
+c/////////////////////////  SUBROUTINE SOLVER  \\\\\\\\\\\\\\\\\\\\\\\\\
+c
+      subroutine solver
+c
+c  PERFORMS PPM UPDATE FOR ONE TIMESTEP
+c   MODIFIED VERSION FOR ADVECTION TESTS
+c
+c  written by: Jim Stone
+c  date:       January, 1991
+c  modified1:
+c
+c  PURPOSE:  Advances the fluid equations by one timestep using the
+c    Lagrange plus remap PPM algorithm in 3-D.
+c
+c  LOCALS:
+c-----------------------------------------------------------------------
+#include "param.h"
+#include "grid.h"
+#include "field.h"
+#include "root.h"
+#include "scratch.h"
+#include "grav.h"
+#include "pseudop.h"
+c-----------------------------------------------------------------------
+      integer j,k,ixyz,n
+      real  dl(jn,kn), dr(jn,kn) 
+     &     ,pb(jn,kn)
+     &     ,vl(jn,kn), vr(jn,kn), vb(jn,kn)
+     &     ,wl(jn,kn), wr(jn,kn), wb(jn,kn)
+      equivalence (dl,wijk0),(dr,wijk1)
+     &           ,(vl,wl,pb,wijk4),(vr,wr,vb,wb,wijk5)
+c
+      real  df(jn,kn)
+     &     ,vf(jn,kn), wf(jn,kn)
+      equivalence (df,wijk0)
+     &           ,(vf,wijk3),(wf,wijk4)
+
+      real*8 pi
+      PARAMETER (pi = 3.141592654)
+
+#ifdef SELFGRAV
+      real phiyed(jn,kn),phized(jn,kn)
+#ifdef CARTESIAN
+      real gheight
+      common / diskthick/ gheight
+#endif
+#endif
+c
+      external yintlgrg, ylgrg, yintrmp, yremap
+     &        ,zintlgrg, zlgrg, zintrmp, zremap, R_SOLVER
+     &        ,bvaldyeul, bvaldylag, bvalvy, bvalwy
+     &        ,bvaldz, bvalvz, bvalwz
+
+#ifdef PSEUDOP
+      integer pyind,pzind
+#endif
+c\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////
+c=======================================================================
+c
+#ifdef CUT
+      call cut(d,v)
+#endif
+
+#ifdef SELFGRAV
+#ifndef CARTESIAN
+      call gpot(d-d_init,phi)
+c      call gpot(d_st-d_init,phi)
+      call gpotint(phi,phiyed,phized)
+      call gpotforce(phi,phiyed,phized)
+#endif
+#ifdef CARTESIAN
+      call self_dintp(d)    /* substract d_init in the routine */
+      call self_gpot(gheight,din,pin)
+      call self_pintp(phi)
+      call gpotint(phi,phiyed,phized)
+      call gpotforce(phi,phiyed,phized)
+#endif
+#endif
+
+#ifdef PSEUDOP
+      do 70 j=1,npsd
+         if ((psdy(j).ge.y(je)).or.(psdy(j).le.y(js))) goto 70
+         if (psdz(j).ge.z(ke)) psdz(j) = psdz(j) - pi
+         if (psdz(j).lt.z(ks)) psdz(j) = psdz(j) + pi
+c finding the index of pseudo particles
+         if (psdyrat .ne. 1.) then
+           psdyind(j)=int(1./alog(psdyrat)*alog((psdyrat-1.)/psdyrat
+     &                   *(psdy(j)-psdymin)/psddymin+1.) + 5.)
+         else
+            psdyind(j)=int((psdy(j)-psdymin)/psddymin+4.)
+         endif
+71         if (psdy(j) .lt. y(psdyind(j)))
+     &                              psdyind(j) = psdyind(j) - 1
+           if (psdy(j) .ge. y(psdyind(j)+1))
+     &                              psdyind(j) = psdyind(j) + 1
+           if ((psdy(j) .lt. y(psdyind(j))) .or.
+     &        (psdy(j) .ge. y(psdyind(j)+1))) goto 71
+
+         psdzind(j)=int((psdz(j)-psdzmin)/psddzmin+4.)
+72       if (psdz(j) .lt. z(psdzind(j)))
+     &                            psdzind(j) = psdzind(j) - 1
+         if (psdz(j) .ge. z(psdzind(j)+1))
+     &                            psdzind(j) = psdzind(j) + 1
+         if ((psdz(j) .lt. z(psdzind(j))) .or.
+
+         pyind = psdyind(j)
+         pzind = psdzind(j)
+c linear interpolation for v,w & update pseudo particles
+         psdz(j) = psdz(j) + dt
+     &           *(((w(pyind,pzind+1)-w(pyind,pzind))
+     &           /(z(pzind+1)-z(pzind))
+     &           *(psdz(j)-z(pzind)) + w(pyind,pzind))/psdy(j)-vgz)
+         psdy(j) = psdy(j) + dt
+     &           *((v(pyind+1,pzind)-v(pyind,pzind))
+     &           /(y(pyind+1)-y(pyind))
+     &           *(psdy(j)-y(pyind)) + v(pyind,pzind))
+70    continue
+#endif
+
+c#ifdef SELFGRAV
+c      do 10 k=ks,ke
+c         do 10 j=js,je+1
+c            v(j,k) = v(j,k) + 0.5*dt*selfgyed (j,k)
+c            w(j,k) = w(j,k) + 0.5*dt*selfgzcen(j,k)
+c   10 continue
+c#endif
+      ixyz = mod(nhy,2)
+      do 130 n=ixyz,ixyz+1
+c
+c  Update in y-direction
+c
+      if (mod(n,2) .eq. 0 .and. nyz .gt. 1) then
+        call bvaldyeul
+        call bvalvy
+        call bvalwy
+        call yintlgrg          (d,v,w,  dy,dl,dr,vl,vr)
+        call R_SOLVER (js,je+1,ks,ke,    dl,dr,vl,vr,pb,vb)
+        do 50 k=ks,ke
+          vb(js,k)=min(vb(js,k),0.0)
+50      continue
+        call ylgrg             (d,  v,w,                     pb,vb)
+c
+        call bvaldyeul
+        call bvalvy
+        call bvalwy
+        call yintrmp(d,v,w,dyn,df,vf,wf)
+        call yremap (d,v,w,    df,vf,wf)
+      endif
+c
+c  Update in z-direction
+c
+      if (mod(n,2) .eq. 1 .and. nzz .gt. 1) then
+        call bvaldz
+        call bvalwz
+        call bvalvz
+        call zintlgrg          (d,  v,w,dz,dl,dr,wl,wr)
+        call R_SOLVER (js,je,ks,ke+1,    dl,dr,wl,wr,pb,wb)
+        call zlgrg             (d,  v,w,                     pb,wb)
+c
+        call bvaldz
+        call bvalvz
+        call bvalwz
+        call zintrmp(d,v,w,dzn,df,vf,wf)
+        call zremap (d,v,w,    df,vf,wf)
+      endif
+130   continue
+#ifdef SELFGRAV
+#endif
+c
+      return
+      end
