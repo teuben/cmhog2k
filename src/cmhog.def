@@ -1,0 +1,48 @@
+#define UNIX
+#define LINUX
+#define TEUBEN
+#define NO_FITSIO
+#define NO_OF_J_ZONES  262
+#define NO_OF_K_ZONES  144
+#define MAX_OF_IJK     1030 
+#define IMG_X          256
+#define IMG_Y          256 
+#define PGMAX      1030
+#define HDFORCES
+
+#define NO_IFORTxxx
+
+#define TAPEREDxxx
+#define OUTFLOW
+#define CUT
+
+#define INITCHECK         /* check for the inital dataset */
+#define INITCHECK2xxx     /* YUANMODEL or ROBERTSMODEL*/
+
+#define PINERMODEL
+#define YUANMODELxxx
+#define ROBERTSMODELxxx
+
+#define PINERDISK           /* PINERMODEL */
+#define ENGLMAIERDISKxxx    /* PINERMODEL */
+
+/* ------- Self-gravity -------- */
+#define SELFGRAVxxxx
+#define SELFG_TURNONxxx
+/* 3 different model */
+#define MILLERPOTxxz
+#define COORDTRANSxxx
+#define CARTESIANxxx
+
+#define PSEUDOPxxx
+
+/*  #define real              real*8  */
+#define RESTART           empty
+#define GRID_GENERATOR    ggen
+#define PROBLEM_GENERATOR galaxy
+#define R_SOLVER          isoshockquad
+#define SPECIAL           empty
+
+/*  #define NONE undefined(a-z)  */
+#define A_BIG_NUMBER   1.0e+10
+#define A_SMALL_NUMBER 1.0e-10
