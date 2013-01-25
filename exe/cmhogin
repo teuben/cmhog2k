@@ -1,18 +1,18 @@
- $rescon id=a1 $
- $hycon idiff=1,ifltn=1,tlim=2.,nlim=9999999 $
- $ggen2 nbl=256,ymin=0.02,ymax=16.0,yrat=1.02646,igrid=1,lgrid=.true. $
- $ggen3 nbl=119,zmin=-1.5708,zmax=1.5708,igrid=1,lgrid=.true. $
- $ijb $
- $ojb $
- $ikb $
- $okb $
- $eos ciso=5.0 $
- $pgen amp=10.0,amode=1.0,n=1.0,aob=2.5,rl=6.,qm=4.5e4,rhoc=2.4e4,bartime=0.18556191,gheight=0.,bhmass=0.0 $
- $pgen2 amp=10.0,v0_yu=300.,pot0_yu=50000.,a_yu=3.,pattern_yu=30.,bartime=0.185 $
- $pgen3 amp=10.0,spiralOX=1,Aconst_ro=1.8,a_ro=5.,B2_ro=4000.,w0_ro=9.,N_ro=5.,i0_ro=0.349066,pattern_ro=15.,bartime=0.178 $ 
- $spiral spamp=0.0,spang=-0.5236,spsc=1.0,sppat=32.74,sr=4.0,pc=2.328 $
- $pgrid rnstart=-0.3, rnscale=0.05 $
- $star dlimit=100.,rcloud=0.005,starff=0.5 $
- $iocon dthdf=0.001,dtmovie=0.,dthist=0.0001 $
- $mlims cma1=3.0,cmi1=-2.0,cma2=200.0,cmi2=-200.0,cma3=200.0,cmi3=-200.0 $
+ $rescon $end
+ $hycon idiff=1,ifltn=1,tlim=2.,nlim=9999999 $end
+ $ggen2 nbl=256,ymin=0.02,ymax=16.0,yrat=1.02646,igrid=1,lgrid=.true. $end
+ $ggen3 nbl=119,zmin=-1.5708,zmax=1.5708,igrid=1,lgrid=.true. $end
+ $ijb $end
+ $ojb $end
+ $ikb $end
+ $okb $end
+ $eos ciso=5.0 $end
+ $pgen amp=10.0,amode=1.0,n=1.0,aob=2.5,rl=6.,qm=4.5e4,rhoc=2.4e4,bartime=0.18556191,gheight=0.,bhmass=0.0 $end
+ $pgen2 amp=10.0,v0_yu=300.,pot0_yu=50000.,a_yu=3.,pattern_yu=30.,bartime=0.185 $end
+ $pgen3 amp=10.0,spiralOX=1,Aconst_ro=1.8,a_ro=5.,B2_ro=4000.,w0_ro=9.,N_ro=5.,i0_ro=0.349066,pattern_ro=15.,bartime=0.178 $end
+ $spiral spamp=0.0,spang=-0.5236,spsc=1.0,sppat=32.74,sr=4.0,pc=2.328 $end
+ $pgrid rnstart=-0.3, rnscale=0.05 $end
+ $star dlimit=100.,rcloud=0.005,starff=0.5 $end
+ $iocon dthdf=0.001,dtmovie=0.,dthist=0.0001 $end
+ $mlims cma1=3.0,cmi1=-2.0,cma2=200.0,cmi2=-200.0,cma3=200.0,cmi3=-200.0 $end
 
