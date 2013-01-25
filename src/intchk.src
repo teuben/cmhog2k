@@ -283,3 +283,9 @@ c
 #ifdef NEEDETIME
 c	define your own real function etime() here
 #endif
+c       for now just return 1 sec, so it will go on forever....
+      real function etime()
+      etime = 1.0
+      return 
+      end
+
