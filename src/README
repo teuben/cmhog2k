@@ -31,3 +31,29 @@ April 2003:
 Known problems:
 
 - numeric grid potential from barred potential not stable enough
+
+
+Major Bug Fix: (2011)
+
+This version is the version we got from Woon-Tae Kim, where the two
+errors in force and bar orientation were fixed. It was forked of
+some earlier version of the "cmhog2" version,hence (for now) the need
+to keep a separate module. The intent is to merge the two.
+
+If you don't have HDF4, and want to install it from within cmhog2k,
+do this:
+
+   cd cmhog2k			# go whereever cmhog2k shows the src/ and exe/
+   cvs co hdf4
+   cd hdf4
+   ./configure --prefix=`pwd`	# if that fails, look at config.log why it failed
+   	       			# you may have missing components. Use --help to
+				# get help on valid configure options.
+				# and/or rerun with things like --without-zlib
+   make clean
+   make
+   make install                 # this will place all bin's and lib's within hdf4 tree
+
+   cd ../src			# now continue back in cmhog2k
+   
+   
