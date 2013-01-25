@@ -178,3 +178,12 @@ convex_cmhog:
 
 #-----------------------------------------------------------------------
 
+# local HDF4 cheat/reminder
+# cd .. ; cvs co hdf4
+
+HDF_ROOT = `pwd`/../hdf4
+
+hdf4:
+	@echo "cd .. ; cvs co hdf4"
+	@echo HDF_ROOT=$(HDF_ROOT)
+	(cd ../hdf4; ./configure --prefix=$(HDF_ROOT); make clean; make; make install)
