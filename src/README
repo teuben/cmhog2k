@@ -55,5 +55,7 @@ do this:
    make install                 # this will place all bin's and lib's within hdf4 tree
 
    cd ../src			# now continue back in cmhog2k
-   
+   cp Makefile.gfortran Makefile     # pretty decent default Makefile, bypassing configure
+      				     # you might still have to edit this
+   make compile                      # compile it, it places cmhog in ../exe
    
