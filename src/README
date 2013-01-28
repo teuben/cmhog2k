@@ -59,3 +59,8 @@ do this:
       				     # you might still have to edit this
    make compile                      # compile it, it places cmhog in ../exe
    
+
+
+--
+this is a change peter made
+===
