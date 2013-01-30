@@ -1,5 +1,0 @@
-
-
-      subroutine empty
-      return
-      end
