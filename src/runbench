@@ -20,7 +20,7 @@ endif
 
 cd $dir
 echo RUNNING CMHOG BENCHMARK:
-time ../cmhog >& cmhog.log
+time ../../exe/cmhog >& cmhog.log
 if ($status) then
    echo Problems executing cmhog:
    cat cmhog.log
